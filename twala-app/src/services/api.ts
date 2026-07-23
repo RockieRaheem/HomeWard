@@ -227,6 +227,14 @@ export const transferApi = {
     request<{ transaction: TransactionItem }>(`/transfer/retry/${referenceId}`, { method: 'POST' }),
 };
 
+export const transakApi = {
+  status: () => request<{ configured: boolean; environment: 'STAGING' | 'PRODUCTION'; fiatCurrency: string; cryptoCurrencyCode: string; canSettleToCurrentWallet: boolean }>('/transak/status'),
+  checkout: (body: { fiatAmount: number; email?: string }) =>
+    request<{ widgetUrl: string; expiresInSeconds: number; walletAddress: string; configured: boolean; environment: 'STAGING' | 'PRODUCTION'; fiatCurrency: string; cryptoCurrencyCode: string; canSettleToCurrentWallet: boolean }>(
+      '/transak/checkout', { method: 'POST', body: JSON.stringify(body) }, 30000
+    ),
+};
+
 export const historyApi = {
   list: (filter?: string, page = 1, goalId?: string) =>
     request<{ transactions: TransactionItem[]; stats: { totalSent: number; totalReceived: number; thisMonth: number }; pagination: any }>(

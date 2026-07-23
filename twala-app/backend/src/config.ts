@@ -13,6 +13,15 @@ const config = {
     useSandbox: process.env.KOTANI_USE_SANDBOX !== 'false',
     escrowAddress: process.env.KOTANI_ESCROW_ADDRESS || '',
   },
+  transak: {
+    apiKey: process.env.TRANSAK_API_KEY || '',
+    // Partner access tokens are server-only. Never expose this in the app.
+    accessToken: process.env.TRANSAK_ACCESS_TOKEN || '',
+    referrerDomain: process.env.TRANSAK_REFERRER_DOMAIN || '',
+    useSandbox: process.env.TRANSAK_USE_SANDBOX !== 'false',
+    fiatCurrency: process.env.TRANSAK_FIAT_CURRENCY || 'AED',
+    cryptoCurrencyCode: process.env.TRANSAK_CRYPTO_CURRENCY_CODE || 'USDCstellar',
+  },
   africasTalking: {
     username: process.env.AT_USERNAME || 'sandbox',
     apiKey: process.env.AT_API_KEY || '',
