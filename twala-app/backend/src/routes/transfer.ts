@@ -10,6 +10,66 @@ import config from '../config.js';
 const router = Router();
 
 // ---------------------------------------------------------------------------
+// POST /api/transfer/demo-fund — real Stellar Testnet funding for the demo
+// ---------------------------------------------------------------------------
+// Transak's staging environment does not deliver Stellar test assets. This
+// endpoint makes that limit explicit while proving the wallet funding leg on
+// chain: our Testnet issuer sends test USDC to the demo wallet.
+router.post('/demo-fund', async (req, res) => {
+  try {
+    const amountUsdc = Number(req.body.amountUsdc || 0);
+    if (!Number.isFinite(amountUsdc) || amountUsdc < 1 || amountUsdc > 5000) {
+      return res.status(400).json({ success: false, message: 'Demo funding amount must be between 1 and 5,000 USDC' });
+    }
+    if (config.stellar.network !== 'TESTNET') {
+      return res.status(400).json({ success: false, message: 'Demo funding is available only on Stellar Testnet' });
+    }
+
+    const wallet = await db.getWallet();
+    if (!wallet) return res.status(400).json({ success: false, message: 'No demo wallet found. Restart the backend to create one.' });
+
+    const stellarTxHash = await stellar.mintTestUsdc(wallet.secretKey, amountUsdc);
+    if (!stellarTxHash) {
+      return res.status(502).json({ success: false, message: 'Stellar Testnet did not accept the funding transaction. No balance was changed.' });
+    }
+    const proof = await stellar.getTransactionProof(stellarTxHash);
+    const balance = await stellar.getBalance(wallet.publicKey);
+    await db.updateWalletBalance(wallet.publicKey, balance.usdc, balance.xlm);
+    const tx = await db.createTransaction({
+      type: 'received', amountUsdc, amountUgx: 0, rate: 0,
+      recipientName: 'Twaala demo wallet', recipientPhone: '', status: 'completed',
+      purpose: 'Demo funding — simulated Transak AED to USDC checkout',
+      stellarTxHash, kotaniStatus: 'NOT_APPLICABLE',
+    });
+    notifyChange();
+
+    res.json({
+      success: true,
+      data: {
+        transaction: tx, balance: balance.usdc, proof,
+        fundingMode: 'SIMULATED_FIAT_REAL_STELLAR_TESTNET',
+        message: `Demo funding complete: ${amountUsdc.toFixed(2)} test USDC was issued on Stellar Testnet.`,
+      },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`  ❌ Demo funding error: ${msg}`);
+    res.status(500).json({ success: false, message: `Demo funding failed: ${msg}` });
+  }
+});
+
+// GET /api/transfer/proof/:hash — independent, live Horizon verification
+router.get('/proof/:hash', async (req, res) => {
+  try {
+    const proof = await stellar.getTransactionProof(req.params.hash);
+    res.json({ success: true, data: proof });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(msg.includes('not yet') ? 404 : 400).json({ success: false, message: msg });
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/transfer/quote?amount=XXX
 // ---------------------------------------------------------------------------
 
@@ -109,8 +169,11 @@ router.post('/offramp', async (req, res) => {
       console.log(`  ✅ Stellar payment sent: ${stellarTxHash.slice(0, 8)}... (${quote.sendAmountUsdc} USDC → ${destination.slice(0, 8)}...)`);
     } catch (stellarErr) {
       const msg = stellarErr instanceof Error ? stellarErr.message : String(stellarErr);
-      console.warn(`  ⚠️ Stellar payment failed: ${msg} — using demo hash`);
-      stellarTxHash = `demo-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      console.error(`  ❌ Stellar payment failed: ${msg}`);
+      return res.status(502).json({
+        success: false,
+        message: `Stellar Testnet rejected the transfer. No payout request was created: ${msg}`,
+      });
     }
 
     // Step 3: Sync wallet balance to DB after payment
@@ -158,6 +221,10 @@ router.post('/offramp', async (req, res) => {
         transaction: tx,
         quote,
         kotaniReferenceId: referenceId,
+        stellarTxHash,
+        stellarExplorerUrl: stellar.getExplorerTransactionUrl(stellarTxHash),
+        stellarNetwork: config.stellar.network,
+        payoutMode: hasKotaniApiKey ? 'KOTANI_PARTNER' : 'SIMULATED_MOBILE_MONEY_REAL_STELLAR_TESTNET',
         balance: newBalance.usdc,
         sms: null, // SMS sent async, check logs
         message: `${quote.receiveAmountUgx.toLocaleString()} UGX sent to ${recipientName.trim()} via ${recipientNetwork || 'MTN'} Mobile Money. Reference: ${referenceId.slice(-8)}`,

@@ -1,8 +1,8 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animated, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animated, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
-import { transferApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData } from '../services/api';
+import { transferApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
 import DismissKeyboard from '../components/DismissKeyboard';
 import SendSuccess from '../components/SendSuccess';
 
@@ -127,8 +127,9 @@ export default function SmartTransfer({ user }: Props = {}) {
     amountUsdc: number; amountUgx: number; recipientName: string;
     recipientPhone?: string; recipientNetwork?: string;
     referenceId: string; newBalance: number; feeUsdc: number; rate: number;
-    goalTitle?: string;
+    goalTitle?: string; stellarTxHash?: string; stellarExplorerUrl?: string;
   } | null>(null);
+  const [fundingProof, setFundingProof] = useState<StellarProof | null>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
   const amountRef = useRef<TextInput>(null);
@@ -227,6 +228,8 @@ export default function SmartTransfer({ user }: Props = {}) {
             feeUsdc: quote!.feeUsdc,
             rate: quote!.rate,
             goalTitle: g?.title,
+            stellarTxHash: res.data.stellarTxHash,
+            stellarExplorerUrl: res.data.stellarExplorerUrl,
           });
           setAmount('500');
           setRecipientName('');
@@ -255,6 +258,8 @@ export default function SmartTransfer({ user }: Props = {}) {
                     recipientNetwork, referenceId: retryRes.data.kotaniReferenceId,
                     newBalance: retryRes.data.balance ?? 0, feeUsdc: quote!.feeUsdc,
                     rate: quote!.rate, goalTitle: g?.title,
+                    stellarTxHash: retryRes.data.stellarTxHash,
+                    stellarExplorerUrl: retryRes.data.stellarExplorerUrl,
                   });
                   setAmount('500'); setRecipientName(''); setRecipientPhone('');
                   setSelectedGoalId(null); setQuote(null);
@@ -275,22 +280,16 @@ export default function SmartTransfer({ user }: Props = {}) {
         setSubmitting(false);
       }
     } else {
-      const fiatAmount = parseFloat(amount.replace(/,/g, '')) * liveRate || 0;
-      if (fiatAmount < 10000) return Alert.alert('Minimum UGX 10,000', 'Enter a larger amount.');
-      if (!recipientPhone.trim()) return Alert.alert('Phone Number', 'Enter your MTN/Airtel phone number.');
+      if (usdAmount < 1) return Alert.alert('Minimum 1 USDC', 'Enter a demo funding amount of at least 1 USDC.');
       setSubmitting(true);
       try {
-        const res = await transferApi.onramp({
-          fiatAmount,
-          phoneNumber: recipientPhone.trim(),
-          network: recipientNetwork,
-        });
-        if (res.success) {
-          Alert.alert('Deposit Request Submitted!', res.data?.message || `Pay UGX ${fiatAmount.toLocaleString()} via ${recipientNetwork} to receive USDC.`);
+        const res = await transferApi.demoFund(usdAmount);
+        if (res.success && res.data) {
+          setFundingProof(res.data.proof);
+          Alert.alert('Funded on Stellar Testnet', res.data.message);
           setAmount('500');
-          setRecipientPhone('');
         } else {
-          Alert.alert('Error', res.message || 'Deposit request failed.');
+          Alert.alert('Error', res.message || 'Demo funding failed.');
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -353,10 +352,10 @@ export default function SmartTransfer({ user }: Props = {}) {
             </View>
 
             <Animated.View style={[styles.amountCard, { transform: [{ scale: scaleAnim }] }]}>
-              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'You Deposit'}</Text>
+              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Demo Funding Amount'}</Text>
               <View style={styles.amountRow}>
                 <Text style={styles.currencySign}>
-                  {mode === 'send' ? '$' : 'UGX'}
+                  $
                 </Text>
                 <TextInput
                   ref={amountRef}
@@ -364,7 +363,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
-                  placeholder={mode === 'send' ? '500' : '1,000,000'}
+                  placeholder="500"
                   placeholderTextColor={Colors.outline}
                   onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
                   returnKeyType="next"
@@ -409,20 +408,18 @@ export default function SmartTransfer({ user }: Props = {}) {
 
             {mode === 'deposit' && (
               <View style={styles.quoteCard}>
-                <Text style={styles.quoteTitle}>Estimated Deposit</Text>
+                <Text style={styles.quoteTitle}>Judge Demo: Fiat Simulation + Real Blockchain</Text>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>You Pay</Text>
-                  <Text style={styles.quoteValue}>UGX {((usdAmount || 0) * liveRate).toLocaleString()}</Text>
+                  <Text style={styles.quoteLabel}>Fiat funding</Text>
+                  <Text style={styles.quoteValue}>Simulated partner checkout</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>You Receive (est.)</Text>
-                  <Text style={styles.quoteValue}>
-                    ${(((usdAmount || 0) * liveRate * 0.98) / liveRate).toFixed(2)} USDC
-                  </Text>
+                  <Text style={styles.quoteLabel}>On-chain action</Text>
+                  <Text style={styles.quoteValue}>${usdAmount.toFixed(2)} test USDC issued</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Fee (2%)</Text>
-                  <Text style={styles.quoteValue}>UGX {Math.round(((usdAmount || 0) * liveRate * 0.02)).toLocaleString()}</Text>
+                  <Text style={styles.quoteLabel}>Network</Text>
+                  <Text style={styles.quoteValue}>Stellar Testnet</Text>
                 </View>
                 <View style={styles.quoteDivider} />
                 <View style={styles.quoteRow}>
@@ -430,6 +427,17 @@ export default function SmartTransfer({ user }: Props = {}) {
                   <Text style={styles.quoteValue}>1 USDC ≈ UGX {liveRate.toLocaleString()}</Text>
                 </View>
               </View>
+            )}
+
+            {mode === 'deposit' && fundingProof && (
+              <TouchableOpacity style={styles.proofBanner} onPress={() => Linking.openURL(fundingProof.explorerUrl)} accessibilityRole="link">
+                <MaterialCommunityIcons name="shield-check" size={22} color={Colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.proofBannerTitle}>Confirmed in Stellar ledger #{fundingProof.ledger}</Text>
+                  <Text style={styles.proofBannerHash}>{fundingProof.hash.slice(0, 14)}...{fundingProof.hash.slice(-8)}</Text>
+                </View>
+                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.primary} />
+              </TouchableOpacity>
             )}
 
             {loading && <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />}

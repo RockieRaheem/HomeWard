@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -15,13 +15,15 @@ interface SendSuccessProps {
   goalTitle?: string;
   feeUsdc: number;
   rate: number;
+  stellarTxHash?: string;
+  stellarExplorerUrl?: string;
   onDone: () => void;
 }
 
 export default function SendSuccess({
   visible, amountUsdc, amountUgx, recipientName, recipientPhone,
   recipientNetwork, referenceId, newBalance, goalTitle,
-  feeUsdc, rate, onDone,
+  feeUsdc, rate, stellarTxHash, stellarExplorerUrl, onDone,
 }: SendSuccessProps) {
   const scale = useRef(new Animated.Value(0)).current;
   const checkOpacity = useRef(new Animated.Value(0)).current;
@@ -119,6 +121,21 @@ export default function SendSuccess({
                 <Text style={[styles.detailValue, { color: Colors.secondary }]}>{goalTitle}</Text>
               </View>
             ) : null}
+
+            {stellarTxHash && stellarExplorerUrl ? (
+              <TouchableOpacity
+                style={styles.proofCard}
+                onPress={() => Linking.openURL(stellarExplorerUrl)}
+                accessibilityRole="link"
+              >
+                <MaterialCommunityIcons name="shield-check" size={18} color={Colors.primary} />
+                <View style={styles.proofText}>
+                  <Text style={styles.proofTitle}>Verified on Stellar Testnet</Text>
+                  <Text style={styles.proofHash}>{stellarTxHash.slice(0, 12)}...{stellarTxHash.slice(-8)}</Text>
+                </View>
+                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.primary} />
+              </TouchableOpacity>
+            ) : null}
           </Animated.View>
 
           <TouchableOpacity style={styles.doneButton} onPress={onDone} activeOpacity={0.8}>
@@ -173,6 +190,10 @@ const styles = StyleSheet.create({
   },
   detailLabel: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant, width: 80 },
   detailValue: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurface, textAlign: 'right' },
+  proofCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, marginTop: 8, borderRadius: BorderRadius.lg, backgroundColor: Colors.primaryContainer },
+  proofText: { flex: 1 },
+  proofTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
+  proofHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 2 },
   doneButton: {
     backgroundColor: Colors.primary, paddingVertical: 16,
     borderRadius: BorderRadius.full, alignItems: 'center',

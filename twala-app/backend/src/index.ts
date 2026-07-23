@@ -204,7 +204,7 @@ app.listen(config.port, '0.0.0.0', async () => {
       const wallet = await stellar.createWallet();
       await db.saveWallet(wallet);
       console.log(`  ✅ Wallet  : ${wallet.publicKey} ${wallet.isFunded ? '(funded via Friendbot)' : '(unfunded)'}`);
-      console.log(`  👛 Secret  : ${wallet.secretKey}`);
+      console.log(`  🔐 Wallet secret stored in the configured database (not printed to logs)`);
 
       if (wallet.isFunded) {
         try {

@@ -248,11 +248,11 @@ export async function initializeTestUsdc(): Promise<void> {
 // Mint test USDC to wallet
 // ---------------------------------------------------------------------------
 
-export async function mintTestUsdc(walletSecret: string, amount: number = config.testUsdc.initialMintAmount): Promise<void> {
-  if (!isTestnet()) return;
+export async function mintTestUsdc(walletSecret: string, amount: number = config.testUsdc.initialMintAmount): Promise<string | null> {
+  if (!isTestnet()) return null;
   if (!config.testUsdc.issuerSecret) {
     console.log(`  ⚠️  No test USDC issuer configured. Skipping mint.`);
-    return;
+    return null;
   }
 
   const walletKeypair = Keypair.fromSecret(walletSecret);
@@ -267,7 +267,7 @@ export async function mintTestUsdc(walletSecret: string, amount: number = config
     await ensureTrustline(walletSecret);
   } catch (err: any) {
     console.log(`  ⚠️  Trustline setup: ${err.message}`);
-    return;
+    return null;
   }
 
   // Step 2: Issuer sends USDC to wallet
@@ -297,10 +297,43 @@ export async function mintTestUsdc(walletSecret: string, amount: number = config
     clearAccountCache(walletPublic);
 
     console.log(`  ✅ Minted ${amount} USDC to wallet (tx: ${result.hash.slice(0, 8)}...)`);
+    return result.hash;
   } catch (err: any) {
     const msg = extractStellarError(err);
     console.log(`  ⚠️  USDC mint failed: ${msg}`);
+    return null;
   }
+}
+
+/** URLs are generated here so the app never guesses which Stellar network was used. */
+export function getExplorerTransactionUrl(hash: string): string {
+  return `https://stellar.expert/explorer/${isTestnet() ? 'testnet' : 'public'}/tx/${hash}`;
+}
+
+export function getExplorerAccountUrl(address: string): string {
+  return `https://stellar.expert/explorer/${isTestnet() ? 'testnet' : 'public'}/account/${address}`;
+}
+
+/** Read an already-submitted transaction back from Horizon; never fabricate proof. */
+export async function getTransactionProof(hash: string): Promise<{
+  hash: string; ledger: number; createdAt: string; successful: boolean;
+  memo: string | null; memoType: string | null; sourceAccount: string;
+  explorerUrl: string; network: 'TESTNET' | 'PUBLIC';
+}> {
+  if (!/^[a-f0-9]{64}$/i.test(hash)) throw new Error('Invalid Stellar transaction hash');
+  const response = await fetch(`${config.stellar.horizonUrl}/transactions/${hash}`, {
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) {
+    throw new Error(response.status === 404 ? 'Transaction is not yet available on Horizon' : `Horizon returned ${response.status}`);
+  }
+  const tx = await response.json() as any;
+  return {
+    hash: tx.hash, ledger: Number(tx.ledger ?? 0), createdAt: tx.created_at,
+    successful: Boolean(tx.successful), memo: tx.memo || null, memoType: tx.memo_type || null,
+    sourceAccount: tx.source_account, explorerUrl: getExplorerTransactionUrl(tx.hash),
+    network: isTestnet() ? 'TESTNET' : 'PUBLIC',
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -76,6 +76,18 @@ export interface TransferQuote {
   estimatedArrival: string;
 }
 
+export interface StellarProof {
+  hash: string;
+  ledger: number;
+  createdAt: string;
+  successful: boolean;
+  memo: string | null;
+  memoType: string | null;
+  sourceAccount: string;
+  explorerUrl: string;
+  network: 'TESTNET' | 'PUBLIC';
+}
+
 export interface TransactionItem {
   id: string;
   type: 'sent' | 'received';
@@ -192,9 +204,16 @@ export const transferApi = {
     request<TransferQuote>(`/transfer/quote?amount=${amount}`),
 
   offramp: (body: { amountUsdc: number; recipientName: string; recipientPhone?: string; recipientNetwork?: string; purpose: string; goalId?: string; senderName?: string; senderPhone?: string; confirmSelfSend?: boolean }) =>
-    request<{ transaction: TransactionItem; quote: TransferQuote; kotaniReferenceId: string; balance: number; sms: { success: boolean; message: string } | null; message: string }>(
+    request<{ transaction: TransactionItem; quote: TransferQuote; kotaniReferenceId: string; stellarTxHash: string; stellarExplorerUrl: string; stellarNetwork: 'TESTNET' | 'PUBLIC'; payoutMode: string; balance: number; sms: { success: boolean; message: string } | null; message: string }>(
       '/transfer/offramp', { method: 'POST', body: JSON.stringify(body) }, 30000
     ),
+
+  demoFund: (amountUsdc: number) =>
+    request<{ transaction: TransactionItem; balance: number; proof: StellarProof; fundingMode: string; message: string }>(
+      '/transfer/demo-fund', { method: 'POST', body: JSON.stringify({ amountUsdc }) }, 30000
+    ),
+
+  proof: (hash: string) => request<StellarProof>(`/transfer/proof/${hash}`, undefined, 12000),
 
   onramp: (body: { fiatAmount: number; phoneNumber: string; network: string }) =>
     request<{ transaction: TransactionItem; kotaniReferenceId: string; message: string }>(
