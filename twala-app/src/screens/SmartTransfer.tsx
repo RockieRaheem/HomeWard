@@ -3,7 +3,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { transferApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
-import DismissKeyboard from '../components/DismissKeyboard';
 import SendSuccess from '../components/SendSuccess';
 
 type TransferMode = 'send' | 'deposit';
@@ -138,6 +137,13 @@ export default function SmartTransfer({ user }: Props = {}) {
   const submitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismissKeyboard = useCallback(() => Keyboard.dismiss(), []);
+
+  const switchMode = useCallback((nextMode: TransferMode) => {
+    dismissKeyboard();
+    setMode(nextMode);
+    // Reset after the conditional Deposit content has been laid out.
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ y: 0, animated: true }));
+  }, [dismissKeyboard]);
 
   const usdAmount = parseFloat(amount) || 0;
 
@@ -314,28 +320,30 @@ export default function SmartTransfer({ user }: Props = {}) {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
-        <DismissKeyboard>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           onScrollBeginDrag={dismissKeyboard}
-          keyboardDismissMode="interactive"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          nestedScrollEnabled
+          scrollEventThrottle={16}
+          overScrollMode="always"
         >
             <StellarPath mode={mode} />
 
             <View style={styles.modeToggle}>
               <TouchableOpacity
                 style={[styles.modeButton, mode === 'send' && styles.modeButtonActive]}
-                onPress={() => setMode('send')}
+                onPress={() => switchMode('send')}
               >
                 <MaterialCommunityIcons name="send" size={18} color={mode === 'send' ? Colors.onPrimary : Colors.primary} />
                 <Text style={[styles.modeText, mode === 'send' && styles.modeTextActive]}>Send</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modeButton, mode === 'deposit' && styles.modeButtonActive]}
-                onPress={() => setMode('deposit')}
+                onPress={() => switchMode('deposit')}
               >
                 <MaterialCommunityIcons name="download" size={18} color={mode === 'deposit' ? Colors.onPrimary : Colors.primary} />
                 <Text style={[styles.modeText, mode === 'deposit' && styles.modeTextActive]}>Deposit</Text>
@@ -554,7 +562,6 @@ export default function SmartTransfer({ user }: Props = {}) {
               )}
             </TouchableOpacity>
         </ScrollView>
-        </DismissKeyboard>
       </KeyboardAvoidingView>
 
       <SendSuccess
@@ -589,7 +596,7 @@ const styles = StyleSheet.create({
   headerRight: {},
   headerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primaryContainer, justifyContent: 'center', alignItems: 'center' },
   headerAvatarText: { fontSize: 14, fontWeight: '700', color: Colors.onPrimary },
-  scrollContent: { padding: Spacing.containerPaddingMobile, paddingBottom: 40 },
+  scrollContent: { padding: Spacing.containerPaddingMobile, paddingBottom: 96, flexGrow: 1 },
   modeToggle: { flexDirection: 'row', gap: 8, marginTop: Spacing.gutter, marginBottom: Spacing.stackMd },
   modeButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
