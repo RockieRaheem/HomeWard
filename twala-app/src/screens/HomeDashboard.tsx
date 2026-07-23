@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Dimensions, ActivityIndicator, AppState } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useCallback, useEffect } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -93,6 +93,15 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
   }, []);
 
   useEffect(() => { fetchData(); }, []);
+
+  // A hosted Transak checkout temporarily backgrounds the app. Refreshing when
+  // it becomes active reads the wallet balance directly from Stellar again.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') fetchData();
+    });
+    return () => subscription.remove();
+  }, [fetchData]);
 
   // Poll for backend-triggered changes every 3s
   useEffect(() => {

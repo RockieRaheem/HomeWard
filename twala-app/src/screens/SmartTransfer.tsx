@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animat
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
-import { transferApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
+import { transferApi, transakApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
 import SendSuccess from '../components/SendSuccess';
 
 type TransferMode = 'send' | 'deposit';
@@ -129,6 +129,7 @@ export default function SmartTransfer({ user }: Props = {}) {
     goalTitle?: string; stellarTxHash?: string; stellarExplorerUrl?: string;
   } | null>(null);
   const [fundingProof, setFundingProof] = useState<StellarProof | null>(null);
+  const [transakStatus, setTransakStatus] = useState<{ configured: boolean; environment: 'STAGING' | 'PRODUCTION'; fiatCurrency: string; canSettleToCurrentWallet: boolean } | null>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
   const amountRef = useRef<TextInput>(null);
@@ -177,6 +178,9 @@ export default function SmartTransfer({ user }: Props = {}) {
     goalsApi.list().then((res) => {
       if (res.success && Array.isArray(res.data)) setGoals(res.data);
     });
+    transakApi.status().then((res) => {
+      if (res.success && res.data) setTransakStatus(res.data);
+    }).catch(() => setTransakStatus(null));
   }, []);
 
   useEffect(() => {
@@ -286,23 +290,46 @@ export default function SmartTransfer({ user }: Props = {}) {
         setSubmitting(false);
       }
     } else {
-      if (usdAmount < 1) return Alert.alert('Minimum 1 USDC', 'Enter a demo funding amount of at least 1 USDC.');
+      const fiatAmount = parseFloat(amount.replace(/,/g, '')) || 0;
+      if (fiatAmount < 1) return Alert.alert('Enter an amount', 'Enter at least 1 AED to continue to Transak.');
       setSubmitting(true);
       try {
-        const res = await transferApi.demoFund(usdAmount);
+        const res = await transakApi.checkout({ fiatAmount });
         if (res.success && res.data) {
-          setFundingProof(res.data.proof);
-          Alert.alert('Funded on Stellar Testnet', res.data.message);
-          setAmount('500');
+          await Linking.openURL(res.data.widgetUrl);
+          Alert.alert(
+            'Complete your Transak checkout',
+            res.data.canSettleToCurrentWallet
+              ? 'Return to Twaala after Transak confirms the order. Your public Stellar wallet balance will refresh from the network.'
+              : 'This is Transak staging: complete the KYC and card journey, then use the Testnet proof action below for the on-chain demo.'
+          );
         } else {
-          Alert.alert('Error', res.message || 'Demo funding failed.');
+          Alert.alert('Transak unavailable', res.message || 'Unable to open the Transak checkout.');
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        Alert.alert('Deposit Failed', msg);
+        Alert.alert('Transak checkout failed', msg);
       } finally {
         setSubmitting(false);
       }
+    }
+  };
+
+  const handleTestnetFunding = async () => {
+    const fiatAmount = parseFloat(amount.replace(/,/g, '')) || 0;
+    const testUsdc = Math.max(1, Math.round((fiatAmount / 3.67) * 100) / 100);
+    setSubmitting(true);
+    try {
+      const res = await transferApi.demoFund(testUsdc);
+      if (!res.success || !res.data) {
+        return Alert.alert('Testnet funding failed', res.message || 'Stellar Testnet did not accept the transaction.');
+      }
+      setFundingProof(res.data.proof);
+      Alert.alert('Confirmed on Stellar Testnet', res.data.message);
+    } catch (err) {
+      Alert.alert('Testnet funding failed', err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -360,10 +387,10 @@ export default function SmartTransfer({ user }: Props = {}) {
             </View>
 
             <Animated.View style={[styles.amountCard, { transform: [{ scale: scaleAnim }] }]}>
-              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Demo Funding Amount'}</Text>
+              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Amount to fund with Transak'}</Text>
               <View style={styles.amountRow}>
                 <Text style={styles.currencySign}>
-                  $
+                  {mode === 'send' ? '$' : 'AED'}
                 </Text>
                 <TextInput
                   ref={amountRef}
@@ -371,7 +398,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
-                  placeholder="500"
+                  placeholder={mode === 'send' ? '500' : '500 AED'}
                   placeholderTextColor={Colors.outline}
                   onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
                   returnKeyType="next"
@@ -416,18 +443,18 @@ export default function SmartTransfer({ user }: Props = {}) {
 
             {mode === 'deposit' && (
               <View style={styles.quoteCard}>
-                <Text style={styles.quoteTitle}>Judge Demo: Fiat Simulation + Real Blockchain</Text>
+                <Text style={styles.quoteTitle}>Fund with Transak</Text>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Fiat funding</Text>
-                  <Text style={styles.quoteValue}>Simulated partner checkout</Text>
+                  <Text style={styles.quoteLabel}>Checkout</Text>
+                  <Text style={styles.quoteValue}>{transakStatus?.configured ? `Transak ${transakStatus.environment}` : 'Transak setup required'}</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>On-chain action</Text>
-                  <Text style={styles.quoteValue}>${usdAmount.toFixed(2)} test USDC issued</Text>
+                  <Text style={styles.quoteLabel}>You fund</Text>
+                  <Text style={styles.quoteValue}>AED {(parseFloat(amount.replace(/,/g, '')) || 0).toLocaleString()}</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Network</Text>
-                  <Text style={styles.quoteValue}>Stellar Testnet</Text>
+                  <Text style={styles.quoteLabel}>Asset destination</Text>
+                  <Text style={styles.quoteValue}>USDC on Stellar</Text>
                 </View>
                 <View style={styles.quoteDivider} />
                 <View style={styles.quoteRow}>
@@ -435,6 +462,13 @@ export default function SmartTransfer({ user }: Props = {}) {
                   <Text style={styles.quoteValue}>1 USDC ≈ UGX {liveRate.toLocaleString()}</Text>
                 </View>
               </View>
+            )}
+
+            {mode === 'deposit' && (
+              <TouchableOpacity style={styles.testnetButton} onPress={handleTestnetFunding} disabled={submitting}>
+                <MaterialCommunityIcons name="shield-check" size={17} color={Colors.primary} />
+                <Text style={styles.testnetButtonText}>Run matching Stellar Testnet proof</Text>
+              </TouchableOpacity>
             )}
 
             {mode === 'deposit' && fundingProof && (
@@ -556,7 +590,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     color={Colors.onPrimary}
                   />
                   <Text style={styles.submitText}>
-                    {mode === 'send' ? 'Send Money' : 'Fund Demo Wallet on Testnet'}
+                    {mode === 'send' ? 'Send Money' : 'Continue to Transak'}
                   </Text>
                 </>
               )}
@@ -626,6 +660,8 @@ const styles = StyleSheet.create({
   quoteLabel: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant },
   quoteValue: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurface },
   quoteDivider: { height: 1, backgroundColor: Colors.outlineVariant + '4D', marginVertical: 4 },
+  testnetButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: Spacing.stackMd, paddingVertical: 12, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.primary, backgroundColor: Colors.primaryContainer },
+  testnetButtonText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
   proofBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.primaryContainer, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, marginTop: Spacing.stackMd },
   proofBannerTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
   proofBannerHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 3 },
