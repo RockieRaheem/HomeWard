@@ -443,7 +443,7 @@ export default function SmartTransfer({ user }: Props = {}) {
             {loading && <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />}
 
             <View style={styles.recipientCard}>
-              <Text style={styles.sectionLabel}>{mode === 'send' ? 'Recipient Details' : 'Your Details'}</Text>
+              <Text style={styles.sectionLabel}>{mode === 'send' ? 'Recipient Details' : 'Demo flow'}</Text>
 
               {mode === 'send' && (
                 <>
@@ -473,22 +473,9 @@ export default function SmartTransfer({ user }: Props = {}) {
                 </>
               )}
 
-              {mode === 'deposit' && (
-                <TextInput
-                  ref={phoneRef}
-                  style={styles.input}
-                  placeholder="Your MTN/Airtel phone number"
-                  placeholderTextColor={Colors.outline}
-                  value={recipientPhone}
-                  onChangeText={setRecipientPhone}
-                  keyboardType="phone-pad"
-                  onFocus={() => scrollRef.current?.scrollTo({ y: 300, animated: true })}
-                  returnKeyType="done"
-                  onSubmitEditing={dismissKeyboard}
-                />
-              )}
+              {mode === 'deposit' && <Text style={styles.demoFlowText}>A production customer completes KYC and payment with a regulated on-ramp such as Transak. Its staging environment cannot issue Stellar test assets, so this action performs the equivalent USDC funding leg directly on Stellar Testnet and exposes the independently verifiable ledger record.</Text>}
 
-              <View style={styles.networkRow}>
+              {mode === 'send' && <View style={styles.networkRow}>
                 {NETWORKS.map((net) => (
                   <TouchableOpacity
                     key={net}
@@ -505,7 +492,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </View>}
 
               {mode === 'send' && (
                 <>
@@ -561,7 +548,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     color={Colors.onPrimary}
                   />
                   <Text style={styles.submitText}>
-                    {mode === 'send' ? 'Send Money' : 'Request Deposit'}
+                    {mode === 'send' ? 'Send Money' : 'Fund Demo Wallet on Testnet'}
                   </Text>
                 </>
               )}
@@ -582,6 +569,8 @@ export default function SmartTransfer({ user }: Props = {}) {
         feeUsdc={successData?.feeUsdc ?? 0}
         rate={successData?.rate ?? 0}
         goalTitle={successData?.goalTitle}
+        stellarTxHash={successData?.stellarTxHash}
+        stellarExplorerUrl={successData?.stellarExplorerUrl}
         onDone={() => setSuccessData(null)}
       />
     </View>
@@ -630,8 +619,12 @@ const styles = StyleSheet.create({
   quoteLabel: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant },
   quoteValue: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurface },
   quoteDivider: { height: 1, backgroundColor: Colors.outlineVariant + '4D', marginVertical: 4 },
+  proofBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.primaryContainer, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, marginTop: Spacing.stackMd },
+  proofBannerTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
+  proofBannerHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 3 },
   recipientCard: { marginTop: Spacing.gutter, gap: 12 },
   sectionLabel: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.primary },
+  demoFlowText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', lineHeight: 20, color: Colors.onSurfaceVariant, backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl },
   input: {
     backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd,
     borderRadius: BorderRadius.xl, fontSize: Typography.bodyMd.fontSize, fontFamily: 'Inter',
