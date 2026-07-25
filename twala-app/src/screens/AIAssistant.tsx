@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { chatApi, isBackendOnline, notifyChange, type ChatMsg, type ChatSessionData, type NavigateAction } from '../services/api';
 import DismissKeyboard from '../components/DismissKeyboard';
+import { createVoiceRecognition, isVoiceRecognitionSupported, type VoiceRecognition } from '../services/voiceRecognition';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
@@ -225,9 +226,12 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceHint, setVoiceHint] = useState<string | null>(null);
 
   const listRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
+  const recognitionRef = useRef<VoiceRecognition | null>(null);
 
   const scrollToEnd = useCallback(() => {
     if (listRef.current && messages.length > 0) {
@@ -258,6 +262,8 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   }, []);
 
   useEffect(() => { loadSessions(); }, []);
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
 
   const loadSessionIntoState = async (id: string) => {
     setActiveSessionId(id);
@@ -342,6 +348,57 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
     if (sugRes.success && sugRes.data) setSuggestions(sugRes.data);
     setIsTyping(false);
     inputRef.current?.blur();
+  };
+
+  const toggleVoiceInput = () => {
+    if (Platform.OS !== 'web' || !isVoiceRecognitionSupported()) {
+      Alert.alert('Voice input unavailable', 'Use HomeWard voice input in Chrome or Edge on a mobile device, then allow microphone access.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition = createVoiceRecognition();
+    if (!recognition) return;
+    recognitionRef.current = recognition;
+    setVoiceHint('Listening… speak naturally, then review your text before sending.');
+    setIsListening(true);
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let index = event.results.length - 1; index >= 0; index--) {
+        const result = event.results[index];
+        if (result.isFinal) {
+          transcript = result[0].transcript.trim();
+          break;
+        }
+      }
+      if (transcript) {
+        setMessage((current) => current ? `${current} ${transcript}` : transcript);
+        setVoiceHint('Voice captured. Review it, then tap send.');
+      }
+    };
+    recognition.onerror = (event) => {
+      const messages: Record<string, string> = {
+        'not-allowed': 'Microphone access was blocked. Allow it in your browser settings and try again.',
+        'no-speech': 'No speech was detected. Try again and speak after the listening indicator appears.',
+        'network': 'Voice recognition needs an internet connection. Please try again.',
+      };
+      setVoiceHint(messages[event.error] || 'Voice input could not start. Please try again.');
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+    try {
+      recognition.start();
+    } catch {
+      setIsListening(false);
+      setVoiceHint('Voice input is already starting. Please try again in a moment.');
+    }
   };
 
   const groupedSessions = groupSessionsByTime(sessions);
@@ -561,6 +618,12 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
 
         {/* Input */}
         <View style={styles.inputArea}>
+          {voiceHint && (
+            <View style={styles.voiceHint}>
+              <MaterialCommunityIcons name={isListening ? 'microphone' : 'information-outline'} size={15} color={isListening ? Colors.error : Colors.primary} />
+              <Text style={styles.voiceHintText}>{voiceHint}</Text>
+            </View>
+          )}
           <View style={styles.inputRow}>
             <TextInput
               ref={inputRef}
@@ -574,6 +637,14 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
               returnKeyType="send"
               onSubmitEditing={() => { if (message.trim()) sendMessage(message); }}
             />
+            <TouchableOpacity
+              accessibilityLabel={isListening ? 'Stop voice input' : 'Start voice input'}
+              style={[styles.voiceButton, isListening && styles.voiceButtonListening]}
+              onPress={toggleVoiceInput}
+              disabled={isTyping}
+            >
+              <MaterialCommunityIcons name={isListening ? 'stop' : 'microphone-outline'} size={22} color={isListening ? Colors.onError : Colors.primary} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.sendButton, !message.trim() && styles.sendButtonDisabled]}
               onPress={() => sendMessage(message)}
@@ -621,8 +692,12 @@ const styles = StyleSheet.create({
   inputArea: { paddingHorizontal: Spacing.containerPaddingMobile, paddingVertical: Spacing.stackSm, backgroundColor: Colors.background, borderTopWidth: 1, borderTopColor: Colors.outlineVariant + '4D' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: Colors.surfaceContainerLowest, padding: 8, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.outlineVariant + '4D', ...Shadow.level2 },
   input: { flex: 1, fontSize: Typography.bodyMd.fontSize, fontFamily: 'Inter', color: Colors.onSurface, paddingVertical: 8, paddingHorizontal: 4, maxHeight: 100 },
+  voiceButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.primaryFixed, borderRadius: BorderRadius.lg },
+  voiceButtonListening: { backgroundColor: Colors.error },
   sendButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.primary, borderRadius: BorderRadius.lg, ...Shadow.level1 },
   sendButtonDisabled: { backgroundColor: Colors.surfaceContainerHigh },
+  voiceHint: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 8, paddingBottom: 8 },
+  voiceHintText: { flex: 1, fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.errorContainer, padding: Spacing.stackMd, borderRadius: BorderRadius.lg, marginBottom: Spacing.gutter },
   errorText: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onError },
 });
