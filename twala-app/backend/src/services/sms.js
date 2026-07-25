@@ -89,12 +89,12 @@ function sendViaApi(to, message) {
     });
 }
 function buildSmsContent(params) {
-    var ref = "TWALA-".concat(Date.now().toString(36).toUpperCase().slice(-6));
+    var ref = "HOMEWARD-".concat(Date.now().toString(36).toUpperCase().slice(-6));
     var date = new Date().toLocaleDateString('en-UG', {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
     return [
-        "TWALA",
+        "HOMEWARD",
         "",
         "Hi ".concat(params.recipientName, ","),
         "",
@@ -104,7 +104,7 @@ function buildSmsContent(params) {
         "Reference: ".concat(ref),
         "Date: ".concat(date),
         "",
-        "Sent via Twala \u2014 Secure cross-border payments",
+        "Sent via HomeWard \u2014 Secure cross-border payments",
     ].join('\n');
 }
 function sendTransferNotification(params) {

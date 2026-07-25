@@ -84,10 +84,10 @@ var demoOfframps = new Map();
 var demoOnramps = new Map();
 var demoIdCounter = 0;
 function nextDemoRefId() {
-    return "twala-demo-".concat(Date.now(), "-").concat(++demoIdCounter);
+    return "homeward-demo-".concat(Date.now(), "-").concat(++demoIdCounter);
 }
 // ---------------------------------------------------------------------------
-// Offramp — USDC → Mobile Money (Twala → Uganda)
+// Offramp — USDC → Mobile Money (HomeWard → Uganda)
 // ---------------------------------------------------------------------------
 function createOfframp(params) {
     return __awaiter(this, void 0, void 0, function () {
@@ -193,7 +193,7 @@ function getOfframpStatus(referenceId) {
     });
 }
 // ---------------------------------------------------------------------------
-// Onramp — Mobile Money → USDC (Uganda → Twala)
+// Onramp — Mobile Money → USDC (Uganda → HomeWard)
 // ---------------------------------------------------------------------------
 function createOnramp(params) {
     return __awaiter(this, void 0, void 0, function () {
@@ -396,5 +396,5 @@ function verifyWebhookSignature(payload, signature, secret) {
 function generateReferenceId() {
     return isDemoMode()
         ? nextDemoRefId()
-        : "twala-".concat(Date.now(), "-").concat(Math.random().toString(36).slice(2, 10));
+        : "homeward-".concat(Date.now(), "-").concat(Math.random().toString(36).slice(2, 10));
 }

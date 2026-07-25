@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "twala-app",
-    "slug": "twala-app",
+    "name": "homeward-app",
+    "slug": "homeward-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

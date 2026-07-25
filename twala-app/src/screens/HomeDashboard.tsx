@@ -144,7 +144,7 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
               <MaterialCommunityIcons name="account" size={24} color={Colors.onPrimary} />
             </View>
             <View>
-              <Text style={styles.appTitle}>Twaala</Text>
+              <Text style={styles.appTitle}>HomeWard</Text>
               <Text style={styles.appSub}>Financial Companion</Text>
             </View>
           </View>
@@ -262,7 +262,7 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
               <TouchableOpacity style={styles.supportCard} activeOpacity={0.7} onPress={() => onNavigate('Assistant')}>
                 <MaterialCommunityIcons name="robot" size={28} color={Colors.onTertiary} style={styles.supportIconTop} />
                 <Text style={styles.supportLabel}>Need help?</Text>
-                <Text style={styles.supportValue}>Chat with Twaala</Text>
+                <Text style={styles.supportValue}>Chat with HomeWard</Text>
                 <View style={styles.supportArrow}>
                   <MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onTertiary} />
                 </View>

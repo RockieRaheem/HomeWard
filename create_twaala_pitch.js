@@ -2,16 +2,16 @@ const pptxgen = require('pptxgenjs');
 
 const pptx = new pptxgen();
 pptx.layout = 'LAYOUT_WIDE';
-pptx.author = 'Twaala';
-pptx.company = 'Twaala';
-pptx.subject = 'Twaala pitch deck';
-pptx.title = 'Twaala — Family money, made visible';
+pptx.author = 'HomeWard';
+pptx.company = 'HomeWard';
+pptx.subject = 'HomeWard pitch deck';
+pptx.title = 'HomeWard — Family money, made visible';
 pptx.lang = 'en-US';
 pptx.theme = {
   headFontFace: 'Aptos Display', bodyFontFace: 'Aptos', lang: 'en-US'
 };
-pptx.defineLayout({ name: 'TWALA', width: 13.333, height: 7.5 });
-pptx.layout = 'TWALA';
+pptx.defineLayout({ name: 'HOMEWARD', width: 13.333, height: 7.5 });
+pptx.layout = 'HOMEWARD';
 
 const C = {
   navy: '063A45', green: '0C8A68', mint: 'DFF7EA', lime: 'B8F23A', cream: 'F8F6F0',
@@ -64,7 +64,7 @@ const arrow = (s, x, y, w, color = C.green) => s.addShape(pptx.ShapeType.chevron
 
 // 3
 {
-  const s = slide(); title(s, 'The solution', 'Twaala turns “send money” into a trusted family-money experience.');
+  const s = slide(); title(s, 'The solution', 'HomeWard turns “send money” into a trusted family-money experience.');
   const items = [
     ['Recipient Passport', 'Saved full name, verified phone, network, relationship and delivery preference.'],
     ['Purpose-first transfers', 'Send against a real family need: school fees, building milestones, savings or emergency support.'],
@@ -86,7 +86,7 @@ const arrow = (s, x, y, w, color = C.green) => s.addShape(pptx.ShapeType.chevron
     ['5', 'Keep proof', 'Receipt, status\n+ family history'],
   ];
   flow.forEach((f, i) => { const x = 0.58 + i * 2.52; box(s, x, 2.72, 2.05, 2.2, i === 2 ? C.navy : C.white); box(s, x + 0.18, 2.93, 0.43, 0.43, i === 2 ? C.lime : C.mint); text(s, f[0], x + 0.18, 3.02, 0.43, 0.18, { fontSize: 10, bold: true, color: i === 2 ? C.navy : C.green, align: 'center' }); text(s, f[1], x + 0.18, 3.65, 1.67, 0.38, { fontSize: 15, bold: true, color: i === 2 ? C.white : C.navy, align: 'center' }); text(s, f[2], x + 0.18, 4.17, 1.67, 0.42, { fontSize: 10.5, color: i === 2 ? 'C7E9E0' : C.muted, align: 'center', breakLine: true }); if (i < 4) arrow(s, x + 2.13, 3.73, 0.28, C.green); });
-  text(s, 'Twaala owns the experience, beneficiary intelligence and proof layer. Regulated partners perform fiat funding, KYC, FX, custody and payout.', 1.1, 5.68, 11.15, 0.54, { fontSize: 14, color: C.muted, align: 'center' }); footer(s, 4);
+  text(s, 'HomeWard owns the experience, beneficiary intelligence and proof layer. Regulated partners perform fiat funding, KYC, FX, custody and payout.', 1.1, 5.68, 11.15, 0.54, { fontSize: 14, color: C.muted, align: 'center' }); footer(s, 4);
 }
 
 // 5
@@ -99,9 +99,9 @@ const arrow = (s, x, y, w, color = C.green) => s.addShape(pptx.ShapeType.chevron
 
 // 6
 {
-  const s = slide(); title(s, 'Why now', 'A practical stack makes the vision buildable without pretending Twaala is a bank.');
+  const s = slide(); title(s, 'Why now', 'A practical stack makes the vision buildable without pretending HomeWard is a bank.');
   const cols = [
-    ['TWAALA', C.navy, ['Beneficiary experience', 'Purpose + goals', 'Receipts + notifications', 'Routing intelligence']],
+    ['HOMEWARD', C.navy, ['Beneficiary experience', 'Purpose + goals', 'Receipts + notifications', 'Routing intelligence']],
     ['REGULATED PARTNERS', C.green, ['Transak: fiat-to-USDC checkout', 'Kotani: mobile-money delivery', 'KYC / AML / custody / FX', 'Local payout operations']],
     ['STELLAR', '197E9D', ['Low-cost settlement rail', 'USDC transport', 'Testnet proof for demo', 'Public-network path to launch']],
   ];
@@ -110,7 +110,7 @@ const arrow = (s, x, y, w, color = C.green) => s.addShape(pptx.ShapeType.chevron
 
 // 7
 {
-  const s = slide(); title(s, 'Competitive edge', 'BOTIM and broad remittance apps move money. Twaala makes family money accountable.');
+  const s = slide(); title(s, 'Competitive edge', 'BOTIM and broad remittance apps move money. HomeWard makes family money accountable.');
   const rows = [['Family-purpose transfers', 'Generic transfer', 'Goal-linked, named beneficiary, visible receipt'], ['Trust after send', 'Status only', 'Recipient Passport + proof + family history'], ['Blockchain role', 'Often invisible', 'Live, explorable Stellar settlement proof'], ['Expansion strategy', 'Many corridors first', 'Win UAE → Uganda family use cases; replicate by corridor']];
   box(s, 0.72, 2.45, 11.86, 0.57, C.navy); [['WHAT MATTERS', 0.98, 2.65, 3], ['BROAD REMITTANCE', 4.55, 2.65, 2.2], ['TWĀALA', 8.16, 2.65, 2.2]].forEach(h => text(s, h[0], h[1], h[2], h[3], 0.18, { fontSize: 10, bold: true, color: C.white, charSpacing: 0.8 }));
   rows.forEach((r, i) => { const y = 3.08 + i * 0.71; box(s, 0.72, y, 11.86, 0.62, i % 2 ? 'F0F5F2' : C.white); text(s, r[0], 0.98, y + 0.18, 3.0, 0.2, { fontSize: 11.5, bold: true, color: C.navy }); text(s, r[1], 4.55, y + 0.18, 2.7, 0.2, { fontSize: 11, color: C.muted }); text(s, r[2], 8.16, y + 0.16, 3.9, 0.24, { fontSize: 11, bold: true, color: C.green }); }); footer(s, 7);
@@ -139,7 +139,7 @@ const arrow = (s, x, y, w, color = C.green) => s.addShape(pptx.ShapeType.chevron
     ['01:18', 'Show family receipt', 'Amount, recipient, purpose, status and immutable proof link.'],
   ];
   script.forEach((r, i) => { const y = 2.38 + i * 0.76; text(s, r[0], 0.9, y + 0.12, 0.72, 0.22, { fontSize: 11, bold: true, color: C.green }); s.addShape(pptx.ShapeType.line, { x: 1.75, y: y + 0.24, w: 0.35, h: 0, line: { color: C.green, width: 2 } }); text(s, r[1], 2.35, y + 0.02, 2.9, 0.28, { fontSize: 14, bold: true, color: C.navy }); text(s, r[2], 5.45, y + 0.02, 6.3, 0.32, { fontSize: 12, color: C.muted }); });
-  box(s, 0.75, 6.2, 11.8, 0.5, C.mint); text(s, 'Judge takeaway: Twaala has a human reason to exist, a credible regulated path, and blockchain proof they can inspect themselves.', 1.0, 6.33, 11.25, 0.2, { fontSize: 12.5, bold: true, color: C.navy, align: 'center' }); footer(s, 9);
+  box(s, 0.75, 6.2, 11.8, 0.5, C.mint); text(s, 'Judge takeaway: HomeWard has a human reason to exist, a credible regulated path, and blockchain proof they can inspect themselves.', 1.0, 6.33, 11.25, 0.2, { fontSize: 12.5, bold: true, color: C.navy, align: 'center' }); footer(s, 9);
 }
 
 // 10
@@ -154,7 +154,7 @@ const arrow = (s, x, y, w, color = C.green) => s.addShape(pptx.ShapeType.chevron
   s.addShape(pptx.ShapeType.line, { x: 8.78, y: 3.72, w: 2.62, h: 0, line: { color: '5CA78F', width: 1 } });
   text(s, 'A purpose-led remittance\nexperience on Stellar.', 8.65, 4.08, 2.9, 0.55, { fontSize: 13, color: C.white, align: 'center', breakLine: true });
   text(s, 'Thank you', 0.78, 6.63, 2.2, 0.25, { fontSize: 13, bold: true, color: C.lime });
-  text(s, 'Twaala  •  DevFest Blockchain Hackathon', 8.4, 6.65, 3.6, 0.2, { fontSize: 8.5, color: 'B5D7CE', align: 'center' });
+  text(s, 'HomeWard  •  DevFest Blockchain Hackathon', 8.4, 6.65, 3.6, 0.2, { fontSize: 8.5, color: 'B5D7CE', align: 'center' });
 }
 
-pptx.writeFile({ fileName: 'C:/Users/Raheem/Desktop/Twala/Twaala_DevFest_Pitch_Deck.pptx' });
+pptx.writeFile({ fileName: 'C:/Users/Raheem/Desktop/Twala/HomeWard_DevFest_Pitch_Deck.pptx' });

@@ -33,7 +33,7 @@ const config = {
     baseUrl: 'https://api.africastalking.com/version1',
     sandboxUrl: 'https://api.sandbox.africastalking.com/version1',
   },
-  twala: {
+  homeward: {
     feePercent: 0.5,
     feeFixedUsdc: 0.50,
     minTransferUsdc: 10,

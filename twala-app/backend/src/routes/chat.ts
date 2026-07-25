@@ -19,7 +19,7 @@ router.post('/sessions', async (req, res) => {
   // Seed welcome message
   await db.addChatMessage({
     role: 'assistant',
-    content: "Hi! I'm **Twaala**, your AI financial companion. I can help you send money to Uganda, track your savings goals, and more. What would you like to do today?",
+    content: "Hi! I'm **HomeWard**, your AI financial companion. I can help you send money to Uganda, track your savings goals, and more. What would you like to do today?",
     sessionId: session.id,
   });
   res.json({ success: true, data: session });

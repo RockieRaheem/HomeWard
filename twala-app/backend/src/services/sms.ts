@@ -27,7 +27,7 @@ function buildSmsContent(params: {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
   return [
-    'TWAALA',
+    'HOMEWARD',
     '',
     `Hi ${params.recipientName},`,
     '',
@@ -36,7 +36,7 @@ function buildSmsContent(params: {
     `Reference: ${ref}`,
     `Date: ${date}`,
     '',
-    'Thank you for using Twaala.',
+    'Thank you for using HomeWard.',
   ].join('\n');
 }
 

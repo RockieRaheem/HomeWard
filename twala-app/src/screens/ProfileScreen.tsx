@@ -72,7 +72,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
           <View style={styles.logoCircle}>
             <Text style={styles.logoText}>T</Text>
           </View>
-          <Text style={styles.brandName}>Twaala</Text>
+          <Text style={styles.brandName}>HomeWard</Text>
           <Text style={styles.tagline}>Send money to Uganda — fast & secure</Text>
         </View>
 

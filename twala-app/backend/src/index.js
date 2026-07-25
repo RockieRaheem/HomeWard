@@ -128,7 +128,7 @@ app.post('/api/sms/test', express_1.default.json(), function (req, res) { return
             recipientName: 'Test Recipient',
             amountUgx: 50000,
             amountUsdc: 10,
-            senderName: 'Twala Test',
+            senderName: 'HomeWard Test',
         });
         return [2 /*return*/];
     });
@@ -230,7 +230,7 @@ app.listen(config_js_1.default.port, '0.0.0.0', function () { return __awaiter(v
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                console.log("\n  \uD83C\uDFE6 Twala Backend running");
+                console.log("\n  \uD83C\uDFE6 HomeWard Backend running");
                 console.log("  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500");
                 console.log("  Network : ".concat(config_js_1.default.stellar.network));
                 console.log("  Horizon : ".concat(config_js_1.default.stellar.horizonUrl));

@@ -37,7 +37,7 @@ router.post('/demo-fund', async (req, res) => {
     await db.updateWalletBalance(wallet.publicKey, balance.usdc, balance.xlm);
     const tx = await db.createTransaction({
       type: 'received', amountUsdc, amountUgx: 0, rate: 0,
-      recipientName: 'Twaala demo wallet', recipientPhone: '', status: 'completed',
+      recipientName: 'HomeWard demo wallet', recipientPhone: '', status: 'completed',
       purpose: 'Demo funding — simulated Transak AED to USDC checkout',
       stellarTxHash, kotaniStatus: 'NOT_APPLICABLE',
     });
@@ -79,16 +79,16 @@ router.get('/quote', async (req, res) => {
     if (!amount || amount <= 0) {
       return res.status(400).json({ success: false, message: 'Valid amount required' });
     }
-    if (amount < config.twala.minTransferUsdc) {
+    if (amount < config.homeward.minTransferUsdc) {
       return res.status(400).json({
         success: false,
-        message: `Minimum transfer is ${config.twala.minTransferUsdc} USDC`,
+        message: `Minimum transfer is ${config.homeward.minTransferUsdc} USDC`,
       });
     }
-    if (amount > config.twala.maxTransferUsdc) {
+    if (amount > config.homeward.maxTransferUsdc) {
       return res.status(400).json({
         success: false,
-        message: `Maximum transfer is ${config.twala.maxTransferUsdc} USDC`,
+        message: `Maximum transfer is ${config.homeward.maxTransferUsdc} USDC`,
       });
     }
 
@@ -115,8 +115,8 @@ router.post('/offramp', async (req, res) => {
     if (!recipientPhone || !recipientPhone.trim()) errors.push('recipientPhone required for Mobile Money and SMS notification');
     if (recipientPhone && !/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) errors.push('recipientPhone must use E.164 format (e.g. +256712345678)');
     if (!purpose || !purpose.trim()) errors.push('purpose required');
-    if (amountUsdc < config.twala.minTransferUsdc) errors.push(`Minimum transfer is ${config.twala.minTransferUsdc} USDC`);
-    if (amountUsdc > config.twala.maxTransferUsdc) errors.push(`Maximum transfer is ${config.twala.maxTransferUsdc} USDC`);
+    if (amountUsdc < config.homeward.minTransferUsdc) errors.push(`Minimum transfer is ${config.homeward.minTransferUsdc} USDC`);
+    if (amountUsdc > config.homeward.maxTransferUsdc) errors.push(`Maximum transfer is ${config.homeward.maxTransferUsdc} USDC`);
     if (errors.length > 0) {
       return res.status(400).json({ success: false, message: errors.join('; ') });
     }

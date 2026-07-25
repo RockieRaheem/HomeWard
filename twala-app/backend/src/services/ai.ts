@@ -73,7 +73,7 @@ function buildSystemPrompt(ctx: AiContext): string {
       ).join('\n')
     : '(none)';
 
-  return `You are Twaala, an AI financial companion for cross-border payments to Uganda.
+  return `You are HomeWard, an AI financial companion for cross-border payments to Uganda.
 
 User: ${ctx.userName}${ctx.userPhone ? ` (${ctx.userPhone})` : ''}
 Wallet: ${usdc(ctx.walletBalance)} USDC
@@ -282,8 +282,8 @@ async function executeToolCall(toolCall: any, ctx: AiContext): Promise<string> {
         if (!wallet) return '❌ No wallet found. Create a wallet first.';
         const balance = await stellar.getBalance(wallet.publicKey);
         if (amountUsdc > balance.usdc) return `❌ You have ${usdc(balance.usdc)} USDC, but trying to send ${usdc(amountUsdc)}.`;
-        if (amountUsdc < config.twala.minTransferUsdc) return `❌ Minimum is ${config.twala.minTransferUsdc} USDC.`;
-        if (amountUsdc > config.twala.maxTransferUsdc) return `❌ Maximum is ${config.twala.maxTransferUsdc} USDC.`;
+        if (amountUsdc < config.homeward.minTransferUsdc) return `❌ Minimum is ${config.homeward.minTransferUsdc} USDC.`;
+        if (amountUsdc > config.homeward.maxTransferUsdc) return `❌ Maximum is ${config.homeward.maxTransferUsdc} USDC.`;
 
         const rate = await getExchangeRate();
         const quote = calculateQuote(amountUsdc, rate);

@@ -127,7 +127,7 @@ function buildSystemPrompt(ctx) {
             return "- ".concat(t.type === 'sent' ? '→' : '←', " ").concat(usdc(t.amountUsdc), " ").concat(t.recipientName, " (").concat(t.status, ")");
         }).join('\n')
         : '(none)';
-    return "You are Kanzu, an AI financial companion for Twala \u2014 USDC \u2192 Mobile Money for Uganda.\n\nWallet: ".concat(usdc(ctx.walletBalance), " USDC\nGoals:\n").concat(goalsBrief, "\nRecent txs:\n").concat(txBrief, "\nRate: 1 USDC \u2248 UGX 3,750 (0.5% fee, min $0.50)\n\nYou can perform these actions via function calls \u2014 DO IT when asked:\n1. create_goal(title, targetAmountUgx, category?, description?)\n2. contribute_to_goal(goalId, amountUgx)\n3. send_money(amountUsdc, recipientName, recipientPhone?, recipientNetwork?, purpose)\n4. update_goal(goalId, title?, targetAmountUgx?, category?, status?, description?)\n5. delete_goal(goalId)\n6. navigate(screen, goalId?) \u2014 go to Dashboard | Goals | Transfer | History | GoalDetail\n\nIMPORTANT: When calling functions that require a goalId, you MUST use the exact ID value shown after \"ID:\" in the Goals list above. Never make up a goalId \u2014 use the actual one from the context.\n\n## Formatting rules\n- Use ## for section headings (never ### or #)\n- Use **bold** for amounts, names, and emphasis\n- Use - for lists (never numbers or *)\n- Use an emoji on its own line for key points: \u2705 \u274C \u26A0\uFE0F \uD83C\uDF89 \uD83C\uDFAF \uD83D\uDCA1\n- Never use > blockquotes, --- rules, or backtick code\n- Keep responses concise and warm. Never fabricate data.\n- CRITICAL: Never display raw IDs, UUIDs, or internal identifiers in your response text.");
+    return "You are Kanzu, an AI financial companion for HomeWard \u2014 USDC \u2192 Mobile Money for Uganda.\n\nWallet: ".concat(usdc(ctx.walletBalance), " USDC\nGoals:\n").concat(goalsBrief, "\nRecent txs:\n").concat(txBrief, "\nRate: 1 USDC \u2248 UGX 3,750 (0.5% fee, min $0.50)\n\nYou can perform these actions via function calls \u2014 DO IT when asked:\n1. create_goal(title, targetAmountUgx, category?, description?)\n2. contribute_to_goal(goalId, amountUgx)\n3. send_money(amountUsdc, recipientName, recipientPhone?, recipientNetwork?, purpose)\n4. update_goal(goalId, title?, targetAmountUgx?, category?, status?, description?)\n5. delete_goal(goalId)\n6. navigate(screen, goalId?) \u2014 go to Dashboard | Goals | Transfer | History | GoalDetail\n\nIMPORTANT: When calling functions that require a goalId, you MUST use the exact ID value shown after \"ID:\" in the Goals list above. Never make up a goalId \u2014 use the actual one from the context.\n\n## Formatting rules\n- Use ## for section headings (never ### or #)\n- Use **bold** for amounts, names, and emphasis\n- Use - for lists (never numbers or *)\n- Use an emoji on its own line for key points: \u2705 \u274C \u26A0\uFE0F \uD83C\uDF89 \uD83C\uDFAF \uD83D\uDCA1\n- Never use > blockquotes, --- rules, or backtick code\n- Keep responses concise and warm. Never fabricate data.\n- CRITICAL: Never display raw IDs, UUIDs, or internal identifiers in your response text.");
 }
 // ---------------------------------------------------------------------------
 // Tool definitions
@@ -302,10 +302,10 @@ function executeToolCall(toolCall) {
                     balance = _f.sent();
                     if (amountUsdc > balance.usdc)
                         return [2 /*return*/, "\u274C You have ".concat(usdc(balance.usdc), " USDC, but trying to send ").concat(usdc(amountUsdc), ".")];
-                    if (amountUsdc < config_js_1.default.twala.minTransferUsdc)
-                        return [2 /*return*/, "\u274C Minimum is ".concat(config_js_1.default.twala.minTransferUsdc, " USDC.")];
-                    if (amountUsdc > config_js_1.default.twala.maxTransferUsdc)
-                        return [2 /*return*/, "\u274C Maximum is ".concat(config_js_1.default.twala.maxTransferUsdc, " USDC.")];
+                    if (amountUsdc < config_js_1.default.homeward.minTransferUsdc)
+                        return [2 /*return*/, "\u274C Minimum is ".concat(config_js_1.default.homeward.minTransferUsdc, " USDC.")];
+                    if (amountUsdc > config_js_1.default.homeward.maxTransferUsdc)
+                        return [2 /*return*/, "\u274C Maximum is ".concat(config_js_1.default.homeward.maxTransferUsdc, " USDC.")];
                     return [4 /*yield*/, (0, rates_js_1.getExchangeRate)()];
                 case 10:
                     rate = _f.sent();

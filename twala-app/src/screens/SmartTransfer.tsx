@@ -18,7 +18,7 @@ interface PurposeOption {
 const PURPOSES: PurposeOption[] = [
   { label: 'Family Support', value: 'family', icon: 'face-woman-profile' as const, desc: 'Send to parents or spouse' },
   { label: 'Construction Milestone', value: 'construction', icon: 'hard-hat' as const, desc: 'Release payment to contractor' },
-  { label: 'Savings', value: 'savings', icon: 'piggy-bank' as const, desc: 'Deposit to your Twaala Vault' },
+  { label: 'Savings', value: 'savings', icon: 'piggy-bank' as const, desc: 'Deposit to your HomeWard Vault' },
   { label: 'School Fees', value: 'education', icon: 'school' as const, desc: 'Pay tuition directly' },
   { label: 'Business Investment', value: 'business', icon: 'briefcase' as const, desc: 'Invoice or partnership payment' },
 ];
@@ -301,7 +301,7 @@ export default function SmartTransfer({ user }: Props = {}) {
           Alert.alert(
             'Complete your Transak checkout',
             res.data.canSettleToCurrentWallet
-              ? 'Return to Twaala after Transak confirms the order. Your public Stellar wallet balance will refresh from the network.'
+              ? 'Return to HomeWard after Transak confirms the order. Your public Stellar wallet balance will refresh from the network.'
               : 'This is Transak staging: complete the KYC and card journey, then use the Testnet proof action below for the on-chain demo.'
           );
         } else {

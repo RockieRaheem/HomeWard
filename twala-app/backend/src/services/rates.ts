@@ -36,7 +36,7 @@ export async function getExchangeRate(): Promise<ExchangeRate> {
 }
 
 export function calculateQuote(amountUsdc: number, rate: ExchangeRate): TransferQuote {
-  const feeUsdc = Math.max(amountUsdc * (config.twala.feePercent / 100), config.twala.feeFixedUsdc);
+  const feeUsdc = Math.max(amountUsdc * (config.homeward.feePercent / 100), config.homeward.feeFixedUsdc);
   const sendAmount = amountUsdc - feeUsdc;
   const receiveUgx = Math.round(sendAmount * rate.usdcToUgx);
 

@@ -81,7 +81,7 @@ app.post('/api/sms/test', express.json(), async (req, res) => {
     recipientName: 'Test Recipient',
     amountUgx: 50000,
     amountUsdc: 10,
-    senderName: 'Twaala Test',
+    senderName: 'HomeWard Test',
   });
   res.status(result.success ? 200 : 502).json({ success: result.success, data: result, message: result.message });
 });
@@ -95,7 +95,7 @@ app.post('/api/sms/diagnose', express.json(), async (req, res) => {
     recipientName: 'Diagnostic Recipient',
     amountUgx: 1,
     amountUsdc: 0,
-    senderName: 'Twaala Diagnostics',
+    senderName: 'HomeWard Diagnostics',
   });
   res.status(result.success ? 200 : 502).json({
     success: result.success,
@@ -162,7 +162,7 @@ setInterval(async () => {
 // ---------------------------------------------------------------------------
 
 app.listen(config.port, '0.0.0.0', async () => {
-  console.log(`\n  🏦 Twaala Backend running`);
+  console.log(`\n  🏦 HomeWard Backend running`);
   console.log(`  ─────────────────────`);
   console.log(`  Network : ${config.stellar.network}`);
   console.log(`  Horizon : ${config.stellar.horizonUrl}`);

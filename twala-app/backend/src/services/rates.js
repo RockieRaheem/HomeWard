@@ -86,7 +86,7 @@ function getExchangeRate() {
     });
 }
 function calculateQuote(amountUsdc, rate) {
-    var feeUsdc = Math.max(amountUsdc * (config_js_1.default.twala.feePercent / 100), config_js_1.default.twala.feeFixedUsdc);
+    var feeUsdc = Math.max(amountUsdc * (config_js_1.default.homeward.feePercent / 100), config_js_1.default.homeward.feeFixedUsdc);
     var sendAmount = amountUsdc - feeUsdc;
     var receiveUgx = Math.round(sendAmount * rate.usdcToUgx);
     return {

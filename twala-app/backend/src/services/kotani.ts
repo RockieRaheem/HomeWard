@@ -136,7 +136,7 @@ export interface WebhookPayload {
 // ---------------------------------------------------------------------------
 
 export function generateReferenceId(): string {
-  return `twala-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `homeward-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -154,7 +154,7 @@ function demoDelay(ms = 600): Promise<void> {
 const demoOfframps = new Map<string, OfframpData>();
 let demoIdCounter = 0;
 function demoRefId(): string {
-  return `twala-demo-${Date.now()}-${++demoIdCounter}`;
+  return `homeward-demo-${Date.now()}-${++demoIdCounter}`;
 }
 
 async function apiCall<T>(

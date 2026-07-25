@@ -58,16 +58,16 @@ router.get('/quote', function (req, res) { return __awaiter(void 0, void 0, void
                 if (!amount || amount <= 0) {
                     return [2 /*return*/, res.status(400).json({ success: false, message: 'Valid amount required' })];
                 }
-                if (amount < config_js_1.default.twala.minTransferUsdc) {
+                if (amount < config_js_1.default.homeward.minTransferUsdc) {
                     return [2 /*return*/, res.status(400).json({
                             success: false,
-                            message: "Minimum transfer is ".concat(config_js_1.default.twala.minTransferUsdc, " USDC"),
+                            message: "Minimum transfer is ".concat(config_js_1.default.homeward.minTransferUsdc, " USDC"),
                         })];
                 }
-                if (amount > config_js_1.default.twala.maxTransferUsdc) {
+                if (amount > config_js_1.default.homeward.maxTransferUsdc) {
                     return [2 /*return*/, res.status(400).json({
                             success: false,
-                            message: "Maximum transfer is ".concat(config_js_1.default.twala.maxTransferUsdc, " USDC"),
+                            message: "Maximum transfer is ".concat(config_js_1.default.homeward.maxTransferUsdc, " USDC"),
                         })];
                 }
                 return [4 /*yield*/, (0, rates_js_1.getExchangeRate)()];
@@ -103,10 +103,10 @@ router.post('/offramp', function (req, res) { return __awaiter(void 0, void 0, v
                     errors.push('recipientName required');
                 if (!purpose || !purpose.trim())
                     errors.push('purpose required');
-                if (amountUsdc < config_js_1.default.twala.minTransferUsdc)
-                    errors.push("Minimum transfer is ".concat(config_js_1.default.twala.minTransferUsdc, " USDC"));
-                if (amountUsdc > config_js_1.default.twala.maxTransferUsdc)
-                    errors.push("Maximum transfer is ".concat(config_js_1.default.twala.maxTransferUsdc, " USDC"));
+                if (amountUsdc < config_js_1.default.homeward.minTransferUsdc)
+                    errors.push("Minimum transfer is ".concat(config_js_1.default.homeward.minTransferUsdc, " USDC"));
+                if (amountUsdc > config_js_1.default.homeward.maxTransferUsdc)
+                    errors.push("Maximum transfer is ".concat(config_js_1.default.homeward.maxTransferUsdc, " USDC"));
                 if (errors.length > 0) {
                     return [2 /*return*/, res.status(400).json({ success: false, message: errors.join('; ') })];
                 }

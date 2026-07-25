@@ -459,7 +459,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
             <MaterialCommunityIcons name="menu" size={24} color={Colors.primary} />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>Twaala</Text>
+            <Text style={styles.headerTitle}>HomeWard</Text>
             {activeSession && (
               <Text style={styles.headerSessionTitle} numberOfLines={1}>{activeSession.title}</Text>
             )}
@@ -565,7 +565,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
             <TextInput
               ref={inputRef}
               style={styles.input}
-              placeholder="Ask Twaala anything..."
+              placeholder="Ask HomeWard anything..."
               placeholderTextColor={Colors.outline}
               value={message}
               onChangeText={setMessage}

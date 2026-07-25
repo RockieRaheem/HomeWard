@@ -6,7 +6,7 @@
 </p>
 
 <div align="center">
-  <h1>TWAALA</h1>
+  <h1>HOMEWARD</h1>
   <p><strong>Cross-border payments from the Stellar blockchain to African mobile money</strong></p>
   <p>Send USDC → MTN / Airtel Mobile Money (Uganda) in seconds, with an AI financial companion</p>
 </div>
@@ -15,7 +15,7 @@
 
 ## Overview
 
-Twaala is a full-stack mobile payments platform that bridges the Stellar blockchain with African mobile money networks. Users deposit USDC, send it to anyone with a phone number, and the recipient receives local currency (UGX) directly to their mobile money wallet — no smartphone required on the receiving end.
+HomeWard is a full-stack mobile payments platform that bridges the Stellar blockchain with African mobile money networks. Users deposit USDC, send it to anyone with a phone number, and the recipient receives local currency (UGX) directly to their mobile money wallet — no smartphone required on the receiving end.
 
 The system includes an **AI financial assistant** powered by Groq and Gemini that can create savings goals, send money, and manage the user's finances through natural conversation.
 
@@ -152,8 +152,8 @@ Sender (App)                    Backend                      Kotani Pay         
 ### 1. Clone & Install
 
 ```bash
-git clone <repo-url> twaala
-cd twaala
+git clone <repo-url> homeward
+cd homeward
 
 # Install both frontend and backend dependencies
 cd backend && npm install && cd ..
@@ -198,7 +198,7 @@ npx tsx watch src/index.ts
 
 You should see:
 ```
-🏦 Twaala Backend running
+🏦 HomeWard Backend running
 ─────────────────────
 Network : TESTNET
 Port    : 4000
@@ -232,7 +232,7 @@ Scan the QR code with your phone (Expo Go app) or press `a` for Android emulator
 | `KOTANI_ESCROW_ADDRESS` | No | — | Kotani Stellar escrow address |
 | `AT_USERNAME` | No | `sandbox` | Africa's Talking username |
 | `AT_API_KEY` | No | — | Africa's Talking API key (console log if empty) |
-| `AT_SENDER_ID` | No | `TWAALA` | SMS sender name |
+| `AT_SENDER_ID` | No | `HOMEWARD` | SMS sender name |
 | `GEMINI_API_KEY` | No | — | Google Gemini API key (fallback AI) |
 | `GROQ_API_KEY` | No | — | Groq API key (primary AI) |
 
@@ -343,7 +343,7 @@ Before switching to mainnet, complete these steps:
 ## Project Structure
 
 ```
-twala-app/
+homeward-app/
 ├── App.tsx                     # Root React Native component
 ├── index.ts                    # Expo entry point
 ├── app.json                    # Expo configuration
