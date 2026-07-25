@@ -4,15 +4,16 @@ import { Platform } from 'react-native';
 // Connection management
 // ---------------------------------------------------------------------------
 
-const LAN_IP = process.env.EXPO_PUBLIC_LAN_IP || '172.20.10.12';
+// Set EXPO_PUBLIC_API_URL in .env for a real device. Never use localhost or
+// Android's 10.0.2.2 from a physical phone — both point at the phone/emulator.
+const LAN_IP = process.env.EXPO_PUBLIC_LAN_IP || '192.168.12.236';
+const CONFIGURED_API_URL = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/+$/, '');
 
 const LOCAL_DEV = Platform.OS === 'web'
   ? 'http://localhost:4000/api'
-  : Platform.OS === 'android'
-    ? 'http://10.0.2.2:4000/api'
-    : `http://${LAN_IP}:4000/api`;
+  : `http://${LAN_IP}:4000/api`;
 
-const BASE_URL = __DEV__ ? LOCAL_DEV : 'https://your-production-api.com/api';
+const BASE_URL = __DEV__ ? (CONFIGURED_API_URL || LOCAL_DEV) : 'https://your-production-api.com/api';
 
 let cachedBaseUrl = BASE_URL;
 let _backendOnline = false;
@@ -161,7 +162,7 @@ interface ApiResult<T> {
 // Generic fetch (no fallbacks — errors propagate to caller)
 // ---------------------------------------------------------------------------
 
-async function request<T>(path: string, options?: RequestInit, timeoutMs = 3000): Promise<ApiResult<T>> {
+async function request<T>(path: string, options?: RequestInit, timeoutMs = 8000): Promise<ApiResult<T>> {
   const url = `${cachedBaseUrl}${path}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
