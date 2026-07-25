@@ -22,21 +22,23 @@ function buildSmsContent(params: {
   amountUgx: number;
   senderName: string;
 }): string {
-  const ref = `TW-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const ref = `HW-${Date.now().toString(36).toUpperCase().slice(-6)}`;
   const date = new Date().toLocaleDateString('en-UG', {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
   return [
     'HOMEWARD',
     '',
-    `Hi ${params.recipientName},`,
+    'MONEY RECEIVED',
     '',
-    `UGX ${params.amountUgx.toLocaleString()} has been sent to you by ${params.senderName}.`,
+    `Hello ${params.recipientName},`,
+    `UGX ${params.amountUgx.toLocaleString()} received.`,
     '',
-    `Reference: ${ref}`,
-    `Date: ${date}`,
+    `From: ${params.senderName}`,
+    `Ref: ${ref}`,
+    date,
     '',
-    'Thank you for using HomeWard.',
+    'Keep this SMS as your receipt.',
   ].join('\n');
 }
 
