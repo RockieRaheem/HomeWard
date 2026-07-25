@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: homeward-api
+    runtime: node
+    rootDir: twala-app/backend
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: STELLAR_NETWORK
+        value: TESTNET
+      - key: STELLAR_HORIZON_URL
+        value: https://horizon-testnet.stellar.org
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: USDC_ISSUER
+        sync: false
+      - key: USDC_ISSUER_SECRET
+        sync: false
+      - key: KOTANI_API_KEY
+        sync: false
+      - key: KOTANI_ESCROW_ADDRESS
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: TRANSAK_API_KEY
+        sync: false
+      - key: TRANSAK_API_SECRET
+        sync: false
+      - key: TRANSAK_REFERRER_DOMAIN
+        sync: false
+      - key: TRANSAK_USE_SANDBOX
+        value: "true"
+      - key: TRANSAK_FIAT_CURRENCY
+        value: AED
+      - key: TRANSAK_CRYPTO_CURRENCY_CODE
+        value: USDCstellar
