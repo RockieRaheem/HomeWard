@@ -147,6 +147,7 @@ export default function SmartTransfer({ user }: Props = {}) {
   }, [dismissKeyboard]);
 
   const usdAmount = parseFloat(amount) || 0;
+  const transakFiatCurrency = transakStatus?.fiatCurrency || 'AED';
 
   // Build dynamic purpose list: static purposes + user's goals
   const goalPurposes: PurposeOption[] = goals.map((g) => ({
@@ -291,7 +292,7 @@ export default function SmartTransfer({ user }: Props = {}) {
       }
     } else {
       const fiatAmount = parseFloat(amount.replace(/,/g, '')) || 0;
-      if (fiatAmount < 1) return Alert.alert('Enter an amount', 'Enter at least 1 AED to continue to Transak.');
+      if (fiatAmount < 1) return Alert.alert('Enter an amount', `Enter at least 1 ${transakFiatCurrency} to continue to Transak.`);
       setSubmitting(true);
       try {
         const res = await transakApi.checkout({ fiatAmount });
@@ -390,7 +391,7 @@ export default function SmartTransfer({ user }: Props = {}) {
               <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Amount to fund with Transak'}</Text>
               <View style={styles.amountRow}>
                 <Text style={styles.currencySign}>
-                  {mode === 'send' ? '$' : 'AED'}
+                  {mode === 'send' ? '$' : transakFiatCurrency}
                 </Text>
                 <TextInput
                   ref={amountRef}
@@ -398,7 +399,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
-                  placeholder={mode === 'send' ? '500' : '500 AED'}
+                  placeholder={mode === 'send' ? '500' : `500 ${transakFiatCurrency}`}
                   placeholderTextColor={Colors.outline}
                   onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
                   returnKeyType="next"
@@ -450,7 +451,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                 </View>
                 <View style={styles.quoteRow}>
                   <Text style={styles.quoteLabel}>You fund</Text>
-                  <Text style={styles.quoteValue}>AED {(parseFloat(amount.replace(/,/g, '')) || 0).toLocaleString()}</Text>
+                  <Text style={styles.quoteValue}>{transakFiatCurrency} {(parseFloat(amount.replace(/,/g, '')) || 0).toLocaleString()}</Text>
                 </View>
                 <View style={styles.quoteRow}>
                   <Text style={styles.quoteLabel}>Asset destination</Text>
