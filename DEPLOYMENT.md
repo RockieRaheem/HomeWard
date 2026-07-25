@@ -27,7 +27,19 @@ TRANSAK_REFERRER_DOMAIN=homeward-staging.vercel.app
 
 Ask Transak to whitelist this exact hostname for the staging API key.
 
-## 3. Deploy the API to Render
+## 3. Deploy the API to Railway (recommended)
+
+1. Create a Railway account using GitHub. New accounts may receive a time-limited trial credit; complete GitHub verification to allow the backend to reach external services.
+2. Click **New Project → Deploy from GitHub Repo** and choose the HomeWard repository.
+3. Select the generated service, open **Settings**, and set **Root Directory** to `twala-app/backend`.
+4. Railway reads `twala-app/backend/railway.json`, which sets the build command, start command, health check and restart policy.
+5. In **Variables**, add the same secret values described below.
+6. In **Networking**, click **Generate Domain**. Railway gives the backend a public HTTPS URL.
+7. Verify the deployment by opening `https://YOUR_RAILWAY_DOMAIN/api/health`.
+
+Use the Railway HTTPS URL as `EXPO_PUBLIC_API_URL` in the Expo app.
+
+## 4. Deploy the API to Render (alternative)
 
 1. Create a Render account and click **New → Blueprint**.
 2. Connect the GitHub repository and select the `main` branch.
@@ -43,7 +55,7 @@ https://homeward-api.onrender.com/api/health
 
 For a reliable live judge demo, use a paid always-on Render instance. Free instances can sleep when idle.
 
-## 4. Configure Transak staging
+## 5. Configure Transak staging
 
 In Render environment variables set:
 
@@ -59,17 +71,17 @@ TRANSAK_CRYPTO_CURRENCY_CODE=USDCstellar
 After Render redeploys, verify:
 
 ```text
-https://homeward-api.onrender.com/api/transak/status
+https://YOUR_BACKEND_DOMAIN/api/transak/status
 ```
 
 The response must show `configured: true`.
 
-## 5. Point the Expo app to Render
+## 6. Point the Expo app to the hosted API
 
 Update `twala-app/.env` locally:
 
 ```env
-EXPO_PUBLIC_API_URL=https://homeward-api.onrender.com/api
+EXPO_PUBLIC_API_URL=https://YOUR_BACKEND_DOMAIN/api
 ```
 
 Restart Expo with a clean cache:
