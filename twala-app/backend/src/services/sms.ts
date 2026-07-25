@@ -40,9 +40,9 @@ function buildSmsContent(params: {
     date,
     '',
     'Keep this SMS as your receipt.',
-  // CRLF is the SMS-standard hard line break. It keeps the brand heading on
-  // its own line in handset clients that normalise lone LF characters.
-  ].join('\r\n');
+  // Africa's Talking's simulator normalises CRLF/LF into spaces. U+2028 is a
+  // Unicode line separator, so the HOMEWARD heading remains a distinct row.
+  ].join('\u2028');
 }
 
 function formatPhone(phone: string): string {
