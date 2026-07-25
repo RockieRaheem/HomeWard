@@ -23,9 +23,11 @@ function buildSmsContent(params: {
   senderName: string;
 }): string {
   const ref = `HW-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-  const date = new Date().toLocaleDateString('en-UG', {
+  const date = new Intl.DateTimeFormat('en-UG', {
+    timeZone: 'Africa/Kampala',
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
+    hour12: false,
+  }).format(new Date());
   return [
     'HOMEWARD',
     '',
@@ -38,7 +40,9 @@ function buildSmsContent(params: {
     date,
     '',
     'Keep this SMS as your receipt.',
-  ].join('\n');
+  // CRLF is the SMS-standard hard line break. It keeps the brand heading on
+  // its own line in handset clients that normalise lone LF characters.
+  ].join('\r\n');
 }
 
 function formatPhone(phone: string): string {
