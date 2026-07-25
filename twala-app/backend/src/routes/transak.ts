@@ -15,7 +15,9 @@ router.post('/checkout', async (req, res) => {
     const wallet = await db.getWallet();
     if (!wallet) return res.status(400).json({ success: false, message: 'No wallet found. Create a wallet first.' });
 
-    const checkout = await transak.createCheckout({ fiatAmount, walletAddress: wallet.publicKey, email });
+    const forwarded = req.headers['x-forwarded-for'];
+    const userIp = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0])?.trim() || req.ip || req.socket.remoteAddress || '';
+    const checkout = await transak.createCheckout({ fiatAmount, walletAddress: wallet.publicKey, email, userIp });
     res.json({ success: true, data: { ...checkout, walletAddress: wallet.publicKey, ...transak.getTransakStatus() } });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

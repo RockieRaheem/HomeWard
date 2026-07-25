@@ -15,12 +15,15 @@ const config = {
   },
   transak: {
     apiKey: process.env.TRANSAK_API_KEY || '',
+    apiSecret: process.env.TRANSAK_API_SECRET || '',
     // Partner access tokens are server-only. Never expose this in the app.
     accessToken: process.env.TRANSAK_ACCESS_TOKEN || '',
     referrerDomain: process.env.TRANSAK_REFERRER_DOMAIN || '',
     useSandbox: process.env.TRANSAK_USE_SANDBOX !== 'false',
     fiatCurrency: process.env.TRANSAK_FIAT_CURRENCY || 'AED',
     cryptoCurrencyCode: process.env.TRANSAK_CRYPTO_CURRENCY_CODE || 'USDCstellar',
+    // Useful only in local staging where the backend sees a private LAN IP.
+    userIpOverride: process.env.TRANSAK_USER_IP_OVERRIDE || '',
   },
   africasTalking: {
     username: process.env.AT_USERNAME || 'sandbox',
