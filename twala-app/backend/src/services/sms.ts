@@ -27,7 +27,7 @@ function buildSmsContent(params: {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
   return [
-    'HOMEWARD MONEY RECEIVED',
+    'HOMEWARD',
     '',
     `Hello ${params.recipientName},`,
     '',
