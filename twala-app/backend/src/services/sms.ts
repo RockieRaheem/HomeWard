@@ -40,9 +40,9 @@ function buildSmsContent(params: {
     date,
     '',
     'Keep this SMS as your receipt.',
-  // Africa's Talking's simulator normalises CRLF/LF into spaces. U+2028 is a
-  // Unicode line separator, so the HOMEWARD heading remains a distinct row.
-  ].join('\u2028');
+  // GSM SMS defines LF as the standard line-feed character. The simulator may
+  // render it as whitespace, but real handset SMS clients receive a line feed.
+  ].join('\n');
 }
 
 function formatPhone(phone: string): string {
