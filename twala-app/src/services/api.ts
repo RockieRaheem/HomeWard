@@ -13,7 +13,9 @@ const LOCAL_DEV = Platform.OS === 'web'
   ? 'http://localhost:4000/api'
   : `http://${LAN_IP}:4000/api`;
 
-const BASE_URL = __DEV__ ? (CONFIGURED_API_URL || LOCAL_DEV) : 'https://your-production-api.com/api';
+// Expo embeds EXPO_PUBLIC_* values at build time. This must take precedence in
+// web production builds so the published app calls the deployed Railway API.
+const BASE_URL = CONFIGURED_API_URL || LOCAL_DEV;
 
 let cachedBaseUrl = BASE_URL;
 let _backendOnline = false;
