@@ -136,7 +136,10 @@ export interface WebhookPayload {
 // ---------------------------------------------------------------------------
 
 export function generateReferenceId(): string {
-  return `homeward-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  // Stellar text memos are limited to 28 bytes. This reference is written to
+  // the on-chain payment memo as well as being used by the payout workflow.
+  // A base-36 timestamp plus random suffix remains unique while staying short.
+  return `HW-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 // ---------------------------------------------------------------------------
