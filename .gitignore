@@ -1,0 +1,6 @@
+# Local environment files can contain API keys, wallet secrets and provider credentials.
+.env
+.env.*
+
+# Safe, documented variable templates remain versioned.
+!.env.example
