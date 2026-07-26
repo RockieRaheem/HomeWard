@@ -128,12 +128,12 @@ export default function SendSuccess({
                 onPress={() => Linking.openURL(stellarExplorerUrl)}
                 accessibilityRole="link"
               >
-                <MaterialCommunityIcons name="shield-check" size={18} color={Colors.primary} />
+                <MaterialCommunityIcons name="shield-check" size={18} color={Colors.onPrimary} />
                 <View style={styles.proofText}>
                   <Text style={styles.proofTitle}>Verified on Stellar Testnet</Text>
                   <Text style={styles.proofHash}>{stellarTxHash.slice(0, 12)}...{stellarTxHash.slice(-8)}</Text>
                 </View>
-                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.primary} />
+                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.onPrimary} />
               </TouchableOpacity>
             ) : null}
           </Animated.View>
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
   detailValue: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurface, textAlign: 'right' },
   proofCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, marginTop: 8, borderRadius: BorderRadius.lg, backgroundColor: Colors.primaryContainer },
   proofText: { flex: 1 },
-  proofTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
-  proofHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 2 },
+  proofTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onPrimary },
+  proofHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, marginTop: 2 },
   doneButton: {
     backgroundColor: Colors.primary, paddingVertical: 16,
     borderRadius: BorderRadius.full, alignItems: 'center',

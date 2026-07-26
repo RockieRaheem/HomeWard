@@ -65,10 +65,10 @@ function StellarPath({ mode }: { mode: TransferMode }) {
                 <MaterialCommunityIcons
                   name={node.icon}
                   size={22}
-                  color={node.label === 'Stellar' ? Colors.onSecondaryContainer : Colors.onPrimary}
+                  color={Colors.onPrimary}
                 />
               </View>
-              <Text style={[stellarStyles.nodeLabel, node.label === 'Stellar' && { color: Colors.secondaryFixed }]}>
+              <Text style={stellarStyles.nodeLabel}>
                 {node.label}
               </Text>
             </View>
@@ -101,7 +101,7 @@ const stellarStyles = StyleSheet.create({
   connectorWrap: { position: 'absolute', top: 22, left: 52, right: -20, height: 4, zIndex: 0 },
   connectorBase: { height: 2, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 1, overflow: 'hidden' },
   connectorPulse: { height: '100%', backgroundColor: Colors.secondaryContainer, borderRadius: 1 },
-  footer: { marginTop: Spacing.gutter, textAlign: 'center', fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.primaryFixed },
+  footer: { marginTop: Spacing.gutter, textAlign: 'center', fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onPrimary },
 });
 
 interface Props {
@@ -471,12 +471,12 @@ export default function SmartTransfer({ user }: Props = {}) {
 
             {mode === 'deposit' && fundingProof && (
               <TouchableOpacity style={styles.proofBanner} onPress={() => Linking.openURL(fundingProof.explorerUrl)} accessibilityRole="link">
-                <MaterialCommunityIcons name="shield-check" size={22} color={Colors.primary} />
+                <MaterialCommunityIcons name="shield-check" size={22} color={Colors.onPrimary} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.proofBannerTitle}>Confirmed in Stellar ledger #{fundingProof.ledger}</Text>
                   <Text style={styles.proofBannerHash}>{fundingProof.hash.slice(0, 14)}...{fundingProof.hash.slice(-8)}</Text>
                 </View>
-                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.primary} />
+                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.onPrimary} />
               </TouchableOpacity>
             )}
 
@@ -665,8 +665,8 @@ const styles = StyleSheet.create({
   testnetButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: Spacing.stackMd, paddingVertical: 12, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.primary, backgroundColor: Colors.primaryContainer },
   testnetButtonText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
   proofBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.primaryContainer, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, marginTop: Spacing.stackMd },
-  proofBannerTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.primary },
-  proofBannerHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 3 },
+  proofBannerTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onPrimary },
+  proofBannerHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, marginTop: 3 },
   recipientCard: { marginTop: Spacing.gutter, gap: 12 },
   sectionLabel: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.primary },
   demoFlowText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', lineHeight: 20, color: Colors.onSurfaceVariant, backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl },
