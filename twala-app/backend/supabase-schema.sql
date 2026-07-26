@@ -83,6 +83,18 @@ CREATE TABLE notifications (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE recipients (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
+  full_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  network TEXT NOT NULL CHECK (network IN ('MTN', 'AIRTEL')),
+  relationship TEXT NOT NULL DEFAULT 'Family',
+  nickname TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Exchange rates (cached)
 CREATE TABLE exchange_rates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

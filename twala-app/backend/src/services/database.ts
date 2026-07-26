@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile, AppNotification } from '../types/index.js';
+import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile, AppNotification, Recipient } from '../types/index.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
@@ -574,6 +574,38 @@ export async function getNotifications(): Promise<AppNotification[]> {
 export async function markNotificationsRead(): Promise<void> {
   const { error } = await db().from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', requireUserId()).is('read_at', null);
   checkError(error, 'markNotificationsRead');
+}
+
+// ---------------------------------------------------------------------------
+// Saved recipients (a private address book, never a payment authorisation)
+// ---------------------------------------------------------------------------
+
+function recipientRow(row: any): Recipient {
+  return { id: row.id, fullName: row.full_name, phone: row.phone, network: row.network, relationship: row.relationship || 'Family', nickname: row.nickname || undefined, createdAt: row.created_at };
+}
+
+export async function getRecipients(): Promise<Recipient[]> {
+  const { data, error } = await db().from('recipients').select('*').eq('user_id', requireUserId()).order('created_at', { ascending: false });
+  checkError(error, 'getRecipients');
+  return (data || []).map(recipientRow);
+}
+
+export async function createRecipient(input: Omit<Recipient, 'id' | 'createdAt'>): Promise<Recipient> {
+  const { data, error } = await db().from('recipients').insert({ user_id: requireUserId(), full_name: input.fullName, phone: input.phone, network: input.network, relationship: input.relationship, nickname: input.nickname || null }).select().single();
+  checkError(error, 'createRecipient');
+  return recipientRow(data);
+}
+
+export async function updateRecipient(id: string, input: Omit<Recipient, 'id' | 'createdAt'>): Promise<Recipient | null> {
+  const { data, error } = await db().from('recipients').update({ full_name: input.fullName, phone: input.phone, network: input.network, relationship: input.relationship, nickname: input.nickname || null, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', requireUserId()).select().single();
+  if (error && error.code === 'PGRST116') return null;
+  checkError(error, 'updateRecipient');
+  return recipientRow(data);
+}
+
+export async function deleteRecipient(id: string): Promise<void> {
+  const { error } = await db().from('recipients').delete().eq('id', id).eq('user_id', requireUserId());
+  checkError(error, 'deleteRecipient');
 }
 
 // ---------------------------------------------------------------------------

@@ -71,6 +71,16 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface Recipient {
+  id: string;
+  fullName: string;
+  phone: string;
+  network: 'MTN' | 'AIRTEL';
+  relationship: string;
+  nickname?: string;
+  createdAt: string;
+}
+
 export interface ExchangeRate {
   usdcToUgx: number;
   usdToUgx: number;

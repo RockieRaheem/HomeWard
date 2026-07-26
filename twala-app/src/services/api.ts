@@ -147,6 +147,16 @@ export interface AppNotificationData {
   createdAt: string;
 }
 
+export interface RecipientData {
+  id: string;
+  fullName: string;
+  phone: string;
+  network: 'MTN' | 'AIRTEL';
+  relationship: string;
+  nickname?: string;
+  createdAt: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -317,6 +327,13 @@ export const ratesApi = {
 export const notificationsApi = {
   list: () => request<AppNotificationData[]>('/notifications'),
   readAll: () => request<{ success: boolean }>('/notifications/read-all', { method: 'POST' }),
+};
+
+export const recipientsApi = {
+  list: () => request<RecipientData[]>('/recipients'),
+  create: (recipient: Omit<RecipientData, 'id' | 'createdAt'>) => request<RecipientData>('/recipients', { method: 'POST', body: JSON.stringify(recipient) }),
+  update: (id: string, recipient: Omit<RecipientData, 'id' | 'createdAt'>) => request<RecipientData>(`/recipients/${id}`, { method: 'PUT', body: JSON.stringify(recipient) }),
+  remove: (id: string) => request<{ success: boolean }>(`/recipients/${id}`, { method: 'DELETE' }),
 };
 
 export const authApi = {

@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animat
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
-import { transferApi, moneygramApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
+import { transferApi, moneygramApi, ratesApi, goalsApi, recipientsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof, type RecipientData } from '../services/api';
 import SendSuccess from '../components/SendSuccess';
 
 type TransferMode = 'send' | 'deposit';
@@ -282,6 +282,8 @@ export default function SmartTransfer({ user }: Props = {}) {
   const [recipientPhone, setRecipientPhone] = useState('');
   const [recipientNetwork, setRecipientNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
   const [recipientRelationship, setRecipientRelationship] = useState('Family');
+  const [recipients, setRecipients] = useState<RecipientData[]>([]);
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [showSafeReview, setShowSafeReview] = useState(false);
   const [liveRate, setLiveRate] = useState(3750);
   const [quote, setQuote] = useState<{ sendAmountUsdc: number; receiveAmountUgx: number; feeUsdc: number; feeUgx: number; rate: number; estimatedArrival: string } | null>(null);
@@ -348,10 +350,34 @@ export default function SmartTransfer({ user }: Props = {}) {
     goalsApi.list().then((res) => {
       if (res.success && Array.isArray(res.data)) setGoals(res.data);
     });
+    recipientsApi.list().then((res) => {
+      if (res.success && Array.isArray(res.data)) setRecipients(res.data);
+    });
     moneygramApi.status().then((res) => {
       if (res.success && res.data) setMoneygramStatus(res.data);
     }).catch(() => setMoneygramStatus(null));
   }, []);
+
+  const recipientPayload = () => ({ fullName: recipientName.trim(), phone: recipientPhone.trim(), network: recipientNetwork, relationship: recipientRelationship.trim() || 'Family', nickname: undefined });
+  const selectRecipient = (recipient: RecipientData) => {
+    setSelectedRecipientId(recipient.id); setRecipientName(recipient.fullName); setRecipientPhone(recipient.phone); setRecipientNetwork(recipient.network); setRecipientRelationship(recipient.relationship);
+  };
+  const saveRecipient = async () => {
+    if (!recipientName.trim() || !/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert('Recipient details', 'Enter a full name and valid international phone number before saving.');
+    const result = selectedRecipientId ? await recipientsApi.update(selectedRecipientId, recipientPayload()) : await recipientsApi.create(recipientPayload());
+    if (!result.success || !result.data) return Alert.alert('Could not save recipient', result.message || 'Please try again.');
+    setRecipients((current) => selectedRecipientId ? current.map((item) => item.id === result.data.id ? result.data : item) : [result.data, ...current]);
+    setSelectedRecipientId(result.data.id);
+    Alert.alert('Recipient saved', `${result.data.fullName} is ready for future transfers.`);
+  };
+  const removeRecipient = () => {
+    if (!selectedRecipientId) return;
+    const recipient = recipients.find((item) => item.id === selectedRecipientId);
+    Alert.alert('Remove saved recipient?', `${recipient?.fullName || 'This recipient'} will be removed from your private list.`, [
+      { text: 'Keep', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => { const result = await recipientsApi.remove(selectedRecipientId); if (result.success) { setRecipients((items) => items.filter((item) => item.id !== selectedRecipientId)); setSelectedRecipientId(null); } else Alert.alert('Could not remove', result.message || 'Please try again.'); } },
+    ]);
+  };
 
   useEffect(() => {
     if (mode === 'deposit') { setQuote(null); return; }
@@ -669,6 +695,10 @@ export default function SmartTransfer({ user }: Props = {}) {
 
               {mode === 'send' && (
                 <>
+                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>Saved recipients</Text><TouchableOpacity onPress={saveRecipient}><Text style={styles.savedRecipientAction}>{selectedRecipientId ? 'Update current' : 'Save current'}</Text></TouchableOpacity></View>
+                  {recipients.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recipientRail}>
+                    {recipients.map((recipient) => <TouchableOpacity key={recipient.id} style={[styles.savedRecipientChip, selectedRecipientId === recipient.id && styles.savedRecipientChipActive]} onPress={() => selectRecipient(recipient)}><View style={styles.savedRecipientAvatar}><Text style={styles.savedRecipientInitials}>{getInitials(recipient.fullName)}</Text></View><View><Text numberOfLines={1} style={styles.savedRecipientName}>{recipient.nickname || recipient.fullName}</Text><Text style={styles.savedRecipientMeta}>{recipient.network} · {recipient.relationship}</Text></View></TouchableOpacity>)}
+                  </ScrollView> : <Text style={styles.savedRecipientEmpty}>Save someone once, then choose them quickly next time.</Text>}
                   <TextInput
                     ref={nameRef}
                     style={styles.input}
@@ -700,6 +730,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     returnKeyType="done"
                     onSubmitEditing={dismissKeyboard}
                   />
+                  {selectedRecipientId ? <TouchableOpacity style={styles.removeRecipientButton} onPress={removeRecipient}><MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} /><Text style={styles.removeRecipientText}>Remove saved recipient</Text></TouchableOpacity> : null}
                 </>
               )}
 
@@ -885,6 +916,18 @@ const styles = StyleSheet.create({
   proofBannerHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, marginTop: 3 },
   recipientCard: { marginTop: Spacing.gutter, gap: 12 },
   sectionLabel: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.primary },
+  savedRecipientHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  savedRecipientAction: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '800', color: Colors.primary },
+  recipientRail: { gap: 9, paddingRight: 8 },
+  savedRecipientChip: { flexDirection: 'row', alignItems: 'center', gap: 8, width: 172, padding: 10, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.outlineVariant + '66', backgroundColor: Colors.surfaceContainerLowest },
+  savedRecipientChipActive: { borderColor: Colors.primary, backgroundColor: '#E0F5EC' },
+  savedRecipientAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center' },
+  savedRecipientInitials: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 10, fontWeight: '800' },
+  savedRecipientName: { color: Colors.onSurface, fontFamily: 'Inter', fontSize: 12, fontWeight: '800', maxWidth: 110 },
+  savedRecipientMeta: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 10, marginTop: 2 },
+  savedRecipientEmpty: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 12, lineHeight: 17, marginTop: -4 },
+  removeRecipientButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
+  removeRecipientText: { color: Colors.error, fontFamily: 'Inter', fontSize: 12, fontWeight: '700' },
   demoFlowText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', lineHeight: 20, color: Colors.onSurfaceVariant, backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl },
   input: {
     backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd,

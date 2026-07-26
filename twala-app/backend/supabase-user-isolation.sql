@@ -25,6 +25,20 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS recipients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  network TEXT NOT NULL CHECK (network IN ('MTN', 'AIRTEL')),
+  relationship TEXT NOT NULL DEFAULT 'Family',
+  nickname TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, phone)
+);
+CREATE INDEX IF NOT EXISTS idx_recipients_user_id ON recipients(user_id, created_at DESC);
+
 -- After the scoped backend is deployed and this migration has run, make ownership mandatory.
 -- Do this only after confirming every real record has an owner:
 -- ALTER TABLE wallets ALTER COLUMN user_id SET NOT NULL;
