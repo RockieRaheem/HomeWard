@@ -22,6 +22,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
   const phoneRef = useRef<TextInput>(null);
   const pinRef = useRef<TextInput>(null);
   const pinConfirmRef = useRef<TextInput>(null);
+  const submitInFlight = useRef(false);
 
   // Auto-detect: check if phone is registered on blur
   const handlePhoneBlur = async () => {
@@ -37,6 +38,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (submitInFlight.current || checking) return;
     Keyboard.dismiss();
     const trimmedPhone = phone.trim();
     const trimmedName = name.trim();
@@ -51,6 +53,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
       if (!pin) return Alert.alert('PIN Required', 'Enter your PIN to log in.');
     }
 
+    submitInFlight.current = true;
     setLoading(true);
     try {
       const res = mode === 'register'
@@ -63,8 +66,10 @@ export default function ProfileScreen({ onProfileReady }: Props) {
       }
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Connection error. Check that the backend is running.');
+    } finally {
+      submitInFlight.current = false;
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -143,13 +148,13 @@ export default function ProfileScreen({ onProfileReady }: Props) {
           <TouchableOpacity
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || checking}
             activeOpacity={0.8}
           >
             {loading ? (
               <ActivityIndicator color={Colors.onPrimary} />
             ) : (
-              <Text style={styles.buttonText}>{mode === 'register' ? 'Create Account' : 'Log In'}</Text>
+              <Text style={styles.buttonText}>{checking ? 'Checking account…' : mode === 'register' ? 'Create Account' : 'Log In'}</Text>
             )}
           </TouchableOpacity>
 
