@@ -230,11 +230,14 @@ export const transferApi = {
     request<{ transaction: TransactionItem }>(`/transfer/retry/${referenceId}`, { method: 'POST' }),
 };
 
-export const transakApi = {
-  status: () => request<{ configured: boolean; environment: 'STAGING' | 'PRODUCTION'; fiatCurrency: string; cryptoCurrencyCode: string; canSettleToCurrentWallet: boolean }>('/transak/status'),
-  checkout: (body: { fiatAmount: number; email?: string }) =>
-    request<{ widgetUrl: string; expiresInSeconds: number; walletAddress: string; configured: boolean; environment: 'STAGING' | 'PRODUCTION'; fiatCurrency: string; cryptoCurrencyCode: string; canSettleToCurrentWallet: boolean }>(
-      '/transak/checkout', { method: 'POST', body: JSON.stringify(body) }, 30000
+export const moneygramApi = {
+  status: () => request<{
+    configured: boolean; environment: 'TESTNET' | 'PRODUCTION'; walletDomain: string | null;
+    fundingMethod: 'CASH_AT_MONEYGRAM_LOCATION'; asset: string; requiresPartnerApproval: boolean;
+  }>('/moneygram/status'),
+  cashIn: (amountAed: number) =>
+    request<{ cashInUrl: string; environment: 'TESTNET' | 'PRODUCTION'; amountAed: number; message: string }>(
+      '/moneygram/cash-in', { method: 'POST', body: JSON.stringify({ amountAed }) }, 30000
     ),
 };
 

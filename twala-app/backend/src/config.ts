@@ -25,6 +25,13 @@ const config = {
     // Useful only in local staging where the backend sees a private LAN IP.
     userIpOverride: process.env.TRANSAK_USER_IP_OVERRIDE || '',
   },
+  moneygram: {
+    // MoneyGram provides this HTTPS cash-in journey only after it has
+    // allowlisted the HomeWard wallet domain and approved the programme.
+    cashInUrl: process.env.MONEYGRAM_RAMP_CASH_IN_URL || '',
+    walletDomain: process.env.MONEYGRAM_WALLET_DOMAIN || '',
+    useSandbox: process.env.MONEYGRAM_USE_SANDBOX !== 'false',
+  },
   africasTalking: {
     username: process.env.AT_USERNAME || 'sandbox',
     apiKey: process.env.AT_API_KEY || '',

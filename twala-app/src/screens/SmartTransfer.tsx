@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animat
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
-import { transferApi, transakApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
+import { transferApi, moneygramApi, ratesApi, goalsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof } from '../services/api';
 import SendSuccess from '../components/SendSuccess';
 
 type TransferMode = 'send' | 'deposit';
@@ -129,7 +129,7 @@ export default function SmartTransfer({ user }: Props = {}) {
     goalTitle?: string; stellarTxHash?: string; stellarExplorerUrl?: string;
   } | null>(null);
   const [fundingProof, setFundingProof] = useState<StellarProof | null>(null);
-  const [transakStatus, setTransakStatus] = useState<{ configured: boolean; environment: 'STAGING' | 'PRODUCTION'; fiatCurrency: string; canSettleToCurrentWallet: boolean } | null>(null);
+  const [moneygramStatus, setMoneygramStatus] = useState<{ configured: boolean; environment: 'TESTNET' | 'PRODUCTION'; walletDomain: string | null } | null>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
   const amountRef = useRef<TextInput>(null);
@@ -147,7 +147,7 @@ export default function SmartTransfer({ user }: Props = {}) {
   }, [dismissKeyboard]);
 
   const usdAmount = parseFloat(amount) || 0;
-  const transakFiatCurrency = transakStatus?.fiatCurrency || 'AED';
+  const fundingCurrency = 'AED';
 
   // Build dynamic purpose list: static purposes + user's goals
   const goalPurposes: PurposeOption[] = goals.map((g) => ({
@@ -179,9 +179,9 @@ export default function SmartTransfer({ user }: Props = {}) {
     goalsApi.list().then((res) => {
       if (res.success && Array.isArray(res.data)) setGoals(res.data);
     });
-    transakApi.status().then((res) => {
-      if (res.success && res.data) setTransakStatus(res.data);
-    }).catch(() => setTransakStatus(null));
+    moneygramApi.status().then((res) => {
+      if (res.success && res.data) setMoneygramStatus(res.data);
+    }).catch(() => setMoneygramStatus(null));
   }, []);
 
   useEffect(() => {
@@ -292,24 +292,22 @@ export default function SmartTransfer({ user }: Props = {}) {
       }
     } else {
       const fiatAmount = parseFloat(amount.replace(/,/g, '')) || 0;
-      if (fiatAmount < 1) return Alert.alert('Enter an amount', `Enter at least 1 ${transakFiatCurrency} to continue to Transak.`);
+      if (fiatAmount < 1) return Alert.alert('Enter an amount', 'Enter at least AED 1 to continue.');
       setSubmitting(true);
       try {
-        const res = await transakApi.checkout({ fiatAmount });
+        const res = await moneygramApi.cashIn(fiatAmount);
         if (res.success && res.data) {
-          await Linking.openURL(res.data.widgetUrl);
+          await Linking.openURL(res.data.cashInUrl);
           Alert.alert(
-            'Complete your Transak checkout',
-            res.data.canSettleToCurrentWallet
-              ? 'Return to HomeWard after Transak confirms the order. Your public Stellar wallet balance will refresh from the network.'
-              : 'This is Transak staging: complete the KYC and card journey, then use the Testnet proof action below for the on-chain demo.'
+            'Complete MoneyGram cash-in',
+            'Complete the identity checks, select an eligible MoneyGram location, and pay AED cash. Return to HomeWard after MoneyGram confirms the USDC deposit.'
           );
         } else {
-          Alert.alert('Transak unavailable', res.message || 'Unable to open the Transak checkout.');
+          Alert.alert('MoneyGram cash-in unavailable', res.message || 'Unable to open MoneyGram cash-in.');
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        Alert.alert('Transak checkout failed', msg);
+        Alert.alert('MoneyGram cash-in failed', msg);
       } finally {
         setSubmitting(false);
       }
@@ -388,10 +386,10 @@ export default function SmartTransfer({ user }: Props = {}) {
             </View>
 
             <Animated.View style={[styles.amountCard, { transform: [{ scale: scaleAnim }] }]}>
-              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Amount to fund with Transak'}</Text>
+              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Cash-in amount at MoneyGram'}</Text>
               <View style={styles.amountRow}>
                 <Text style={styles.currencySign}>
-                  {mode === 'send' ? '$' : transakFiatCurrency}
+                  {mode === 'send' ? '$' : fundingCurrency}
                 </Text>
                 <TextInput
                   ref={amountRef}
@@ -399,7 +397,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="decimal-pad"
-                  placeholder={mode === 'send' ? '500' : `500 ${transakFiatCurrency}`}
+                  placeholder={mode === 'send' ? '500' : '500 AED'}
                   placeholderTextColor={Colors.outline}
                   onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
                   returnKeyType="next"
@@ -444,14 +442,14 @@ export default function SmartTransfer({ user }: Props = {}) {
 
             {mode === 'deposit' && (
               <View style={styles.quoteCard}>
-                <Text style={styles.quoteTitle}>Fund with Transak</Text>
+                <Text style={styles.quoteTitle}>Cash in with MoneyGram</Text>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Checkout</Text>
-                  <Text style={styles.quoteValue}>{transakStatus?.configured ? `Transak ${transakStatus.environment}` : 'Transak setup required'}</Text>
+                  <Text style={styles.quoteLabel}>Funding method</Text>
+                  <Text style={styles.quoteValue}>AED cash at MoneyGram</Text>
                 </View>
                 <View style={styles.quoteRow}>
                   <Text style={styles.quoteLabel}>You fund</Text>
-                  <Text style={styles.quoteValue}>{transakFiatCurrency} {(parseFloat(amount.replace(/,/g, '')) || 0).toLocaleString()}</Text>
+                  <Text style={styles.quoteValue}>AED {(parseFloat(amount.replace(/,/g, '')) || 0).toLocaleString()}</Text>
                 </View>
                 <View style={styles.quoteRow}>
                   <Text style={styles.quoteLabel}>Asset destination</Text>
@@ -459,8 +457,8 @@ export default function SmartTransfer({ user }: Props = {}) {
                 </View>
                 <View style={styles.quoteDivider} />
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Rate</Text>
-                  <Text style={styles.quoteValue}>1 USDC ≈ UGX {liveRate.toLocaleString()}</Text>
+                  <Text style={styles.quoteLabel}>Status</Text>
+                  <Text style={styles.quoteValue}>{moneygramStatus?.configured ? `MoneyGram ${moneygramStatus.environment}` : 'Testnet proof available'}</Text>
                 </View>
               </View>
             )}
@@ -468,7 +466,7 @@ export default function SmartTransfer({ user }: Props = {}) {
             {mode === 'deposit' && (
               <TouchableOpacity style={styles.testnetButton} onPress={handleTestnetFunding} disabled={submitting}>
                 <MaterialCommunityIcons name="shield-check" size={17} color={Colors.primary} />
-                <Text style={styles.testnetButtonText}>Run matching Stellar Testnet proof</Text>
+                <Text style={styles.testnetButtonText}>Run MoneyGram cash-in Testnet proof</Text>
               </TouchableOpacity>
             )}
 
@@ -516,7 +514,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                 </>
               )}
 
-              {mode === 'deposit' && <Text style={styles.demoFlowText}>A production customer completes KYC and payment with a regulated on-ramp such as Transak. Its staging environment cannot issue Stellar test assets, so this action performs the equivalent USDC funding leg directly on Stellar Testnet and exposes the independently verifiable ledger record.</Text>}
+              {mode === 'deposit' && <Text style={styles.demoFlowText}>HomeWard uses MoneyGram Ramps for AED cash-in at an eligible location. MoneyGram handles identity checks and cash collection, then deposits USDC on Stellar. Until MoneyGram approves HomeWard’s UAE programme, the button above performs the equivalent funding leg on Stellar Testnet and exposes the independent ledger record.</Text>}
 
               {mode === 'send' && <View style={styles.networkRow}>
                 {NETWORKS.map((net) => (
@@ -591,7 +589,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     color={Colors.onPrimary}
                   />
                   <Text style={styles.submitText}>
-                    {mode === 'send' ? 'Send Money' : 'Continue to Transak'}
+                    {mode === 'send' ? 'Send Money' : 'Continue to MoneyGram'}
                   </Text>
                 </>
               )}

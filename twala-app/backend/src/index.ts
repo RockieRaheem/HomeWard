@@ -12,6 +12,7 @@ import ratesRouter from './routes/rates.js';
 import kotaniRouter from './routes/kotani.js';
 import authRouter from './routes/auth.js';
 import transakRouter from './routes/transak.js';
+import moneygramRouter from './routes/moneygram.js';
 import * as stellar from './services/stellar.js';
 import * as db from './services/database.js';
 import * as kotani from './services/kotani.js';
@@ -71,6 +72,7 @@ app.use('/api/rates', ratesRouter);
 app.use('/api/kotani', kotaniRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/transak', transakRouter);
+app.use('/api/moneygram', moneygramRouter);
 
 // POST /api/sms/test — quick SMS test endpoint (fire-and-forget)
 app.post('/api/sms/test', express.json(), async (req, res) => {

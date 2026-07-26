@@ -38,7 +38,7 @@ router.post('/demo-fund', async (req, res) => {
     const tx = await db.createTransaction({
       type: 'received', amountUsdc, amountUgx: 0, rate: 0,
       recipientName: 'HomeWard demo wallet', recipientPhone: '', status: 'completed',
-      purpose: 'Demo funding — simulated Transak AED to USDC checkout',
+      purpose: 'Demo funding — simulated MoneyGram AED cash-in to USDC',
       stellarTxHash, kotaniStatus: 'NOT_APPLICABLE',
     });
     notifyChange();
