@@ -586,7 +586,7 @@ export async function markNotificationRead(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 function recipientRow(row: any): Recipient {
-  return { id: row.id, fullName: row.full_name, phone: row.phone, network: row.network, relationship: row.relationship || 'Family', nickname: row.nickname || undefined, createdAt: row.created_at };
+  return { id: row.id, fullName: row.full_name, phone: row.phone, network: row.network, relationship: row.relationship || 'Family', nickname: row.nickname || undefined, monthlyPlanUsdc: row.monthly_plan_usdc ? Number(row.monthly_plan_usdc) : undefined, createdAt: row.created_at };
 }
 
 export async function getRecipients(): Promise<Recipient[]> {
@@ -596,13 +596,13 @@ export async function getRecipients(): Promise<Recipient[]> {
 }
 
 export async function createRecipient(input: Omit<Recipient, 'id' | 'createdAt'>): Promise<Recipient> {
-  const { data, error } = await db().from('recipients').insert({ user_id: requireUserId(), full_name: input.fullName, phone: input.phone, network: input.network, relationship: input.relationship, nickname: input.nickname || null }).select().single();
+  const { data, error } = await db().from('recipients').insert({ user_id: requireUserId(), full_name: input.fullName, phone: input.phone, network: input.network, relationship: input.relationship, nickname: input.nickname || null, monthly_plan_usdc: input.monthlyPlanUsdc || null }).select().single();
   checkError(error, 'createRecipient');
   return recipientRow(data);
 }
 
 export async function updateRecipient(id: string, input: Omit<Recipient, 'id' | 'createdAt'>): Promise<Recipient | null> {
-  const { data, error } = await db().from('recipients').update({ full_name: input.fullName, phone: input.phone, network: input.network, relationship: input.relationship, nickname: input.nickname || null, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', requireUserId()).select().single();
+  const { data, error } = await db().from('recipients').update({ full_name: input.fullName, phone: input.phone, network: input.network, relationship: input.relationship, nickname: input.nickname || null, monthly_plan_usdc: input.monthlyPlanUsdc || null, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', requireUserId()).select().single();
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'updateRecipient');
   return recipientRow(data);
@@ -611,6 +611,18 @@ export async function updateRecipient(id: string, input: Omit<Recipient, 'id' | 
 export async function deleteRecipient(id: string): Promise<void> {
   const { error } = await db().from('recipients').delete().eq('id', id).eq('user_id', requireUserId());
   checkError(error, 'deleteRecipient');
+}
+
+export async function getRecipientTransferInsights(phone: string): Promise<{ completedCount: number; usualAmountUsdc: number; sentThisMonthUsdc: number; lastNetwork?: string }> {
+  const userId = requireUserId();
+  const { data, error } = await db().from('transactions').select('amount_usdc, recipient_network, created_at').eq('user_id', userId).eq('type', 'sent').eq('status', 'completed').eq('recipient_phone', phone).order('created_at', { ascending: false }).limit(12);
+  checkError(error, 'getRecipientTransferInsights');
+  const records = data || [];
+  const amounts = records.map((row: any) => Number(row.amount_usdc)).sort((a: number, b: number) => a - b);
+  const usualAmountUsdc = amounts.length ? amounts[Math.floor(amounts.length / 2)] : 0;
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const sentThisMonthUsdc = records.filter((row: any) => new Date(row.created_at).getTime() >= monthStart).reduce((total: number, row: any) => total + Number(row.amount_usdc), 0);
+  return { completedCount: records.length, usualAmountUsdc, sentThisMonthUsdc, lastNetwork: records[0]?.recipient_network || undefined };
 }
 
 

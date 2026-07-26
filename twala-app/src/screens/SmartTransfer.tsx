@@ -282,6 +282,7 @@ export default function SmartTransfer({ user }: Props = {}) {
   const [recipientPhone, setRecipientPhone] = useState('');
   const [recipientNetwork, setRecipientNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
   const [recipientRelationship, setRecipientRelationship] = useState('Family');
+  const [recipientMonthlyPlan, setRecipientMonthlyPlan] = useState('');
   const [recipients, setRecipients] = useState<RecipientData[]>([]);
   const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
   const [showSafeReview, setShowSafeReview] = useState(false);
@@ -358,9 +359,13 @@ export default function SmartTransfer({ user }: Props = {}) {
     }).catch(() => setMoneygramStatus(null));
   }, []);
 
-  const recipientPayload = () => ({ fullName: recipientName.trim(), phone: recipientPhone.trim(), network: recipientNetwork, relationship: recipientRelationship.trim() || 'Family', nickname: undefined });
+  const recipientPayload = () => ({
+    fullName: recipientName.trim(), phone: recipientPhone.trim(), network: recipientNetwork,
+    relationship: recipientRelationship.trim() || 'Family', nickname: undefined,
+    monthlyPlanUsdc: recipientMonthlyPlan.trim() ? Number(recipientMonthlyPlan) : undefined,
+  });
   const selectRecipient = (recipient: RecipientData) => {
-    setSelectedRecipientId(recipient.id); setRecipientName(recipient.fullName); setRecipientPhone(recipient.phone); setRecipientNetwork(recipient.network); setRecipientRelationship(recipient.relationship);
+    setSelectedRecipientId(recipient.id); setRecipientName(recipient.fullName); setRecipientPhone(recipient.phone); setRecipientNetwork(recipient.network); setRecipientRelationship(recipient.relationship); setRecipientMonthlyPlan(recipient.monthlyPlanUsdc ? String(recipient.monthlyPlanUsdc) : '');
   };
   const saveRecipient = async () => {
     if (!recipientName.trim() || !/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert('Recipient details', 'Enter a full name and valid international phone number before saving.');
@@ -443,6 +448,7 @@ export default function SmartTransfer({ user }: Props = {}) {
           setRecipientName('');
           setRecipientPhone('');
           setRecipientRelationship('Family');
+          setRecipientMonthlyPlan('');
           setSelectedGoalId(null);
           setQuote(null);
         } else if ((res as any).selfSend) {
@@ -472,7 +478,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     stellarExplorerUrl: retryRes.data.stellarExplorerUrl,
                   });
                   setAmount('500'); setRecipientName(''); setRecipientPhone('');
-                  setRecipientRelationship('Family');
+                  setRecipientRelationship('Family'); setRecipientMonthlyPlan('');
                   setSelectedGoalId(null); setQuote(null);
                 } else {
                   Alert.alert('Error', retryRes.message || 'Transfer failed.');
@@ -695,7 +701,7 @@ export default function SmartTransfer({ user }: Props = {}) {
 
               {mode === 'send' && (
                 <>
-                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>Trusted recipients</Text><TouchableOpacity onPress={() => { if (selectedRecipientId) setSelectedRecipientId(null); setRecipientName(''); setRecipientPhone(''); setRecipientRelationship('Family'); requestAnimationFrame(() => nameRef.current?.focus()); }}><Text style={styles.savedRecipientAction}>+ Add recipient</Text></TouchableOpacity></View>
+                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>Trusted recipients</Text><TouchableOpacity onPress={() => { if (selectedRecipientId) setSelectedRecipientId(null); setRecipientName(''); setRecipientPhone(''); setRecipientRelationship('Family'); setRecipientMonthlyPlan(''); requestAnimationFrame(() => nameRef.current?.focus()); }}><Text style={styles.savedRecipientAction}>+ Add recipient</Text></TouchableOpacity></View>
                   {recipients.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recipientRail}>
                     {recipients.map((recipient) => <TouchableOpacity key={recipient.id} style={[styles.savedRecipientChip, selectedRecipientId === recipient.id && styles.savedRecipientChipActive]} onPress={() => selectRecipient(recipient)}><View style={styles.savedRecipientAvatar}><Text style={styles.savedRecipientInitials}>{getInitials(recipient.fullName)}</Text></View><View><Text numberOfLines={1} style={styles.savedRecipientName}>{recipient.nickname || recipient.fullName}</Text><Text style={styles.savedRecipientMeta}>{recipient.network} · {recipient.relationship}</Text></View></TouchableOpacity>)}
                   </ScrollView> : <Text style={styles.savedRecipientEmpty}>Save someone once, then choose them quickly next time.</Text>}
@@ -716,6 +722,15 @@ export default function SmartTransfer({ user }: Props = {}) {
                     placeholderTextColor={Colors.outline}
                     value={recipientRelationship}
                     onChangeText={setRecipientRelationship}
+                    returnKeyType="next"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Monthly support plan in USDC (optional)"
+                    placeholderTextColor={Colors.outline}
+                    value={recipientMonthlyPlan}
+                    onChangeText={setRecipientMonthlyPlan}
+                    keyboardType="decimal-pad"
                     returnKeyType="next"
                   />
                   <TextInput

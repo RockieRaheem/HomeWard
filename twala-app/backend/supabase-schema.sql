@@ -91,6 +91,7 @@ CREATE TABLE recipients (
   network TEXT NOT NULL CHECK (network IN ('MTN', 'AIRTEL')),
   relationship TEXT NOT NULL DEFAULT 'Family',
   nickname TEXT,
+  monthly_plan_usdc NUMERIC(20,7),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

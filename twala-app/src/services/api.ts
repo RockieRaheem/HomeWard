@@ -154,6 +154,7 @@ export interface RecipientData {
   network: 'MTN' | 'AIRTEL';
   relationship: string;
   nickname?: string;
+  monthlyPlanUsdc?: number;
   createdAt: string;
 }
 

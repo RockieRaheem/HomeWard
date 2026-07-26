@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS recipients (
   UNIQUE(user_id, phone)
 );
 CREATE INDEX IF NOT EXISTS idx_recipients_user_id ON recipients(user_id, created_at DESC);
+ALTER TABLE recipients ADD COLUMN IF NOT EXISTS monthly_plan_usdc NUMERIC(20,7);
 
 
 -- After the scoped backend is deployed and this migration has run, make ownership mandatory.

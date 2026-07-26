@@ -78,6 +78,7 @@ export interface Recipient {
   network: 'MTN' | 'AIRTEL';
   relationship: string;
   nickname?: string;
+  monthlyPlanUsdc?: number;
   createdAt: string;
 }
 

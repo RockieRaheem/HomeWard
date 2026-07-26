@@ -9,7 +9,7 @@ function validate(body: any): string | null {
   if (!validNetwork(body.network)) return 'Choose MTN or Airtel';
   return null;
 }
-function input(body: any) { return { fullName: body.fullName.trim(), phone: body.phone.trim(), network: body.network, relationship: body.relationship?.trim() || 'Family', nickname: body.nickname?.trim() || undefined } as const; }
+function input(body: any) { const monthlyPlanUsdc = Number(body.monthlyPlanUsdc); return { fullName: body.fullName.trim(), phone: body.phone.trim(), network: body.network, relationship: body.relationship?.trim() || 'Family', nickname: body.nickname?.trim() || undefined, monthlyPlanUsdc: Number.isFinite(monthlyPlanUsdc) && monthlyPlanUsdc > 0 ? monthlyPlanUsdc : undefined } as const; }
 
 router.get('/', async (_req, res) => { try { res.json({ success: true, data: await db.getRecipients() }); } catch (err) { res.status(500).json({ success: false, message: err instanceof Error ? err.message : String(err) }); } });
 router.post('/', async (req, res) => { const error = validate(req.body); if (error) return res.status(400).json({ success: false, message: error }); try { res.status(201).json({ success: true, data: await db.createRecipient(input(req.body)) }); } catch (err: any) { const duplicate = err?.code === '23505' || String(err?.message || '').includes('duplicate key'); res.status(duplicate ? 409 : 500).json({ success: false, message: duplicate ? 'This phone number is already saved. Select it to update its details.' : (err instanceof Error ? err.message : String(err)) }); } });

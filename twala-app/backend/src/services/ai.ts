@@ -43,6 +43,10 @@ function hasExplicitSendConfirmation(message: string): boolean {
   return /\bconfirm\s+send\b/i.test(message.trim());
 }
 
+function hasExplicitGuardrailConfirmation(message: string): boolean {
+  return /\bconfirm\s+(higher|unusual)\s+amount\b/i.test(message.trim());
+}
+
 function cleanAssistantOutput(value: string): string {
   return value
     .replace(/<think[\s\S]*?<\/think>/gi, '')
@@ -120,6 +124,7 @@ You can perform these actions via function calls — DO IT when asked:
 - Never invent beneficiary details, rates, provider availability, partner approvals, transaction status, or a result you cannot verify from the supplied context.
 - Never send money on a first request. Prepare a Safe-to-send review, ask the user to check it, and require the exact phrase **CONFIRM SEND**. Only then call send_money with confirmedByUser:true.
 - AI transfers are permitted only to a listed Trusted recipient. Use their exact saved name, phone and network; if the user names someone unsaved, direct them to add that recipient in Send Money. Never guess or alter recipient details.
+- Before any AI transfer, compare it with that recipient's prior completed transfers and optional monthly support plan. If the amount is unusually high, the plan would be exceeded, or the saved network differs from the last completed transfer, show the specific warning and require both **CONFIRM HIGHER AMOUNT** and **CONFIRM SEND** before calling send_money again.
 - Before create_goal, check every listed goal for a similar title, purpose, category or target. If similar, do not create it; explain the match and require the exact phrase **CONFIRM CREATE GOAL** before calling create_goal again.
 - Never reveal chain-of-thought, hidden analysis, XML/HTML tags, or tool payloads. Give only the concise user-facing answer.
 - For goal or chat deletion, explain that it is permanent and direct the user to the app's confirmation sheet; do not claim deletion before it has happened.
@@ -336,6 +341,20 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
         if (!trustedRecipient) return '⚠️ This recipient is not in your Trusted recipients list, so I have not prepared a transfer. Open Send Money, add and verify their full name, phone and network, then return here.';
         if (trustedRecipient.fullName.toLowerCase() !== String(args.recipientName || '').trim().toLowerCase()) return `⚠️ The saved recipient for ${trustedRecipient.phone} is ${trustedRecipient.fullName}. I stopped the transfer because the name does not match.`;
         const network = trustedRecipient.network;
+        const insights = await db.getRecipientTransferInsights(trustedRecipient.phone);
+        const warnings: string[] = [];
+        if (insights.completedCount >= 2 && amountUsdc > Math.max(insights.usualAmountUsdc * 2, insights.usualAmountUsdc + 25)) {
+          warnings.push(`This is ${usdc(amountUsdc - insights.usualAmountUsdc)} above the usual ${usdc(insights.usualAmountUsdc)} transfer to ${trustedRecipient.fullName}`);
+        }
+        if (trustedRecipient.monthlyPlanUsdc && insights.sentThisMonthUsdc + amountUsdc > trustedRecipient.monthlyPlanUsdc) {
+          warnings.push(`This would bring monthly support to ${usdc(insights.sentThisMonthUsdc + amountUsdc)}, above the saved ${usdc(trustedRecipient.monthlyPlanUsdc)} plan`);
+        }
+        if (insights.lastNetwork && insights.lastNetwork !== network) {
+          warnings.push(`Saved network is now ${network}, while the last completed transfer used ${insights.lastNetwork}`);
+        }
+        if (warnings.length && !hasExplicitGuardrailConfirmation(userMessage)) {
+          return `⚠️ SAFETY CHECK — not sent. ${warnings.join('. ')}. Verify the amount, recipient and network. If this is intentional, reply with both CONFIRM HIGHER AMOUNT and CONFIRM SEND.`;
+        }
         const wallet = await db.getWallet();
         if (!wallet) return '❌ No wallet found. Create a wallet first.';
         const balance = await stellar.getBalance(wallet.publicKey);
