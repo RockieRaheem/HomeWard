@@ -513,7 +513,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                 </>
               )}
 
-              {mode === 'deposit' && <Text style={styles.demoFlowText}>HomeWard uses MoneyGram Ramps for AED cash-in at an eligible location. MoneyGram handles identity checks and cash collection, then deposits USDC on Stellar. Until MoneyGram approves HomeWard’s UAE programme, the button above performs the equivalent funding leg on Stellar Testnet and exposes the independent ledger record.</Text>}
+              {mode === 'deposit' && <Text style={styles.demoFlowText}>HomeWard uses MoneyGram Ramps for AED cash-in at an eligible location. MoneyGram handles identity checks and cash collection, then deposits USDC on Stellar. Until MoneyGram approves HomeWard’s UAE programme, select “Run MoneyGram Testnet cash-in” below to perform the equivalent Stellar Testnet funding leg and view its independent ledger record.</Text>}
 
               {mode === 'send' && <View style={styles.networkRow}>
                 {NETWORKS.map((net) => (
