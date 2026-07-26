@@ -292,7 +292,7 @@ export default function SmartTransfer({ user }: Props = {}) {
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<{
-    transactionId: string; amountUsdc: number; amountUgx: number; recipientName: string;
+    amountUsdc: number; amountUgx: number; recipientName: string;
     recipientPhone?: string; recipientNetwork?: string;
     referenceId: string; newBalance: number; feeUsdc: number; rate: number;
     goalTitle?: string; stellarTxHash?: string; stellarExplorerUrl?: string;
@@ -425,7 +425,6 @@ export default function SmartTransfer({ user }: Props = {}) {
           const g = goals.find((x) => x.id === selectedGoalId);
           const bal = res.data.balance ?? 0;
           setSuccessData({
-            transactionId: res.data.transaction.id,
             amountUsdc: quote!.sendAmountUsdc,
             amountUgx: quote!.receiveAmountUgx,
             recipientName: recipientName.trim(),
@@ -463,7 +462,6 @@ export default function SmartTransfer({ user }: Props = {}) {
                 if (retryRes.success && retryRes.data) {
                   const g = goals.find((x) => x.id === selectedGoalId);
                   setSuccessData({
-                    transactionId: retryRes.data.transaction.id,
                     amountUsdc: quote!.sendAmountUsdc, amountUgx: quote!.receiveAmountUgx,
                     recipientName: recipientName.trim(), recipientPhone: recipientPhone.trim() || undefined,
                     recipientNetwork, referenceId: retryRes.data.kotaniReferenceId,
@@ -858,7 +856,6 @@ export default function SmartTransfer({ user }: Props = {}) {
         confirmedAt={successData?.confirmedAt}
         stellarTxHash={successData?.stellarTxHash}
         stellarExplorerUrl={successData?.stellarExplorerUrl}
-        onConfirmReceipt={successData ? async (code) => { const result = await transferApi.confirmRecipientReceipt(successData.transactionId, code); return { success: result.success, message: result.message }; } : undefined}
         onDone={() => setSuccessData(null)}
       />
     </View>

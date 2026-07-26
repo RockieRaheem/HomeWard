@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Linking, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Linking, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 
 interface SendSuccessProps {
@@ -20,25 +20,20 @@ interface SendSuccessProps {
   rate: number;
   stellarTxHash?: string;
   stellarExplorerUrl?: string;
-  onConfirmReceipt?: (code: string) => Promise<{ success: boolean; message?: string }>;
   onDone: () => void;
 }
 
 export default function SendSuccess({
   visible, amountUsdc, amountUgx, recipientName, recipientPhone,
   recipientNetwork, referenceId, newBalance, goalTitle, purpose, recipientRelationship, confirmedAt,
-  feeUsdc, rate, stellarTxHash, stellarExplorerUrl, onConfirmReceipt, onDone,
+  feeUsdc, rate, stellarTxHash, stellarExplorerUrl, onDone,
 }: SendSuccessProps) {
   const scale = useRef(new Animated.Value(0)).current;
   const checkOpacity = useRef(new Animated.Value(0)).current;
   const detailsOpacity = useRef(new Animated.Value(0)).current;
-  const [confirmationCode, setConfirmationCode] = useState('');
-  const [confirmationState, setConfirmationState] = useState<'idle' | 'checking' | 'confirmed' | 'error'>('idle');
-  const [confirmationMessage, setConfirmationMessage] = useState('');
 
   useEffect(() => {
     if (visible) {
-      setConfirmationCode(''); setConfirmationState('idle'); setConfirmationMessage('');
       scale.setValue(0);
       checkOpacity.setValue(0);
       detailsOpacity.setValue(0);
@@ -51,13 +46,6 @@ export default function SendSuccess({
     }
   }, [visible]);
 
-  const confirmReceipt = async () => {
-    if (!onConfirmReceipt || !/^\d{6}$/.test(confirmationCode)) { setConfirmationState('error'); setConfirmationMessage('Enter the six-digit code sent to the recipient.'); return; }
-    setConfirmationState('checking');
-    const result = await onConfirmReceipt(confirmationCode);
-    setConfirmationState(result.success ? 'confirmed' : 'error');
-    setConfirmationMessage(result.message || (result.success ? 'Recipient receipt confirmed.' : 'The code could not be confirmed.'));
-  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
@@ -156,7 +144,6 @@ export default function SendSuccess({
               </TouchableOpacity>
             ) : null}
 
-            {onConfirmReceipt ? <View style={[styles.confirmationCard, confirmationState === 'confirmed' && styles.confirmationCardDone]}><View style={styles.confirmationHeader}><MaterialCommunityIcons name={confirmationState === 'confirmed' ? 'account-check-outline' : 'shield-key-outline'} size={20} color={Colors.primary} /><View style={{ flex: 1 }}><Text style={styles.confirmationTitle}>{confirmationState === 'confirmed' ? 'Recipient receipt confirmed' : 'Confirm family receipt'}</Text><Text style={styles.confirmationText}>{confirmationState === 'confirmed' ? 'Your recipient confirmed they received this payment.' : 'Ask the recipient for the six-digit HomeWard code sent by SMS.'}</Text></View></View>{confirmationState !== 'confirmed' ? <View style={styles.confirmationInputRow}><TextInput value={confirmationCode} onChangeText={(value) => { setConfirmationCode(value.replace(/\D/g, '').slice(0, 6)); setConfirmationState('idle'); }} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.outline} style={styles.confirmationInput} /><TouchableOpacity style={styles.confirmationButton} onPress={confirmReceipt} disabled={confirmationState === 'checking'}>{confirmationState === 'checking' ? <ActivityIndicator size="small" color={Colors.onPrimary} /> : <Text style={styles.confirmationButtonText}>Verify</Text>}</TouchableOpacity></View> : null}{confirmationState === 'error' ? <Text style={styles.confirmationError}>{confirmationMessage}</Text> : null}</View> : null}
           </Animated.View>
           </ScrollView>
 
@@ -224,7 +211,6 @@ const styles = StyleSheet.create({
   goalImpactText: { color: Colors.onSurfaceVariant, fontSize: 10, fontFamily: 'Inter', marginTop: 3 },
   consentNote: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 9, borderRadius: 10, backgroundColor: Colors.surfaceContainerLow },
   consentText: { flex: 1, color: Colors.primary, fontSize: 10, fontFamily: 'Inter', fontWeight: '600' },
-  confirmationCard: { backgroundColor: '#FFF6E5', borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#F2D49B', padding: 12, marginTop: 6 }, confirmationCardDone: { backgroundColor: '#EAF6F1', borderColor: '#C5E7D8' }, confirmationHeader: { flexDirection: 'row', gap: 8 }, confirmationTitle: { color: Colors.onSurface, fontSize: 12, fontFamily: 'Inter', fontWeight: '800' }, confirmationText: { color: Colors.onSurfaceVariant, fontSize: 10, fontFamily: 'Inter', lineHeight: 15, marginTop: 2 }, confirmationInputRow: { flexDirection: 'row', gap: 8, marginTop: 10 }, confirmationInput: { flex: 1, backgroundColor: Colors.surface, borderRadius: 9, borderWidth: 1, borderColor: Colors.outlineVariant, paddingHorizontal: 10, fontFamily: 'Inter', color: Colors.onSurface, letterSpacing: 2, fontWeight: '800' }, confirmationButton: { backgroundColor: Colors.primary, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 14, minWidth: 68 }, confirmationButtonText: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 11, fontWeight: '800' }, confirmationError: { color: Colors.error, fontFamily: 'Inter', fontSize: 10, marginTop: 7 },
   doneButton: {
     backgroundColor: Colors.primary, paddingVertical: 16,
     borderRadius: BorderRadius.full, alignItems: 'center',

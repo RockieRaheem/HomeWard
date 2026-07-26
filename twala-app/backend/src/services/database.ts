@@ -1,5 +1,4 @@
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
-import { createHash, randomInt } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile, AppNotification, Recipient } from '../types/index.js';
 
@@ -614,31 +613,6 @@ export async function deleteRecipient(id: string): Promise<void> {
   checkError(error, 'deleteRecipient');
 }
 
-// ---------------------------------------------------------------------------
-// Recipient receipt confirmation (OTP is hashed; plaintext never reaches DB)
-// ---------------------------------------------------------------------------
-
-export async function createReceiptConfirmation(transactionId: string, recipientPhone: string): Promise<{ code: string; expiresAt: string }> {
-  const code = String(randomInt(100000, 1_000_000));
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-  const { error } = await db().from('receipt_confirmations').upsert({ transaction_id: transactionId, user_id: requireUserId(), recipient_phone: recipientPhone, code_hash: createHash('sha256').update(code).digest('hex'), expires_at: expiresAt, attempts: 0 }, { onConflict: 'transaction_id' });
-  checkError(error, 'createReceiptConfirmation');
-  return { code, expiresAt };
-}
-
-export async function verifyReceiptConfirmation(transactionId: string, code: string): Promise<{ confirmed: boolean; message: string }> {
-  const userId = requireUserId();
-  const { data, error } = await db().from('receipt_confirmations').select('*').eq('transaction_id', transactionId).eq('user_id', userId).single();
-  if (error?.code === 'PGRST116' || !data) return { confirmed: false, message: 'No recipient confirmation is available for this transfer.' };
-  checkError(error, 'verifyReceiptConfirmation');
-  if (data.confirmed_at) return { confirmed: true, message: 'Receipt was already confirmed by the recipient.' };
-  if (new Date(data.expires_at).getTime() < Date.now()) return { confirmed: false, message: 'This confirmation code has expired.' };
-  if (Number(data.attempts || 0) >= 5) return { confirmed: false, message: 'Too many incorrect attempts. Request a new confirmation code.' };
-  const isMatch = createHash('sha256').update(code.trim()).digest('hex') === data.code_hash;
-  if (!isMatch) { await db().from('receipt_confirmations').update({ attempts: Number(data.attempts || 0) + 1 }).eq('id', data.id).eq('user_id', userId); return { confirmed: false, message: 'That code does not match. Please check the recipient SMS.' }; }
-  await db().from('receipt_confirmations').update({ confirmed_at: new Date().toISOString() }).eq('id', data.id).eq('user_id', userId);
-  return { confirmed: true, message: 'Recipient receipt confirmed.' };
-}
 
 // ---------------------------------------------------------------------------
 // Exchange Rates

@@ -95,17 +95,6 @@ CREATE TABLE recipients (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE TABLE receipt_confirmations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  transaction_id UUID NOT NULL UNIQUE REFERENCES transactions(id) ON DELETE CASCADE,
-  user_id UUID,
-  recipient_phone TEXT NOT NULL,
-  code_hash TEXT NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
-  attempts INTEGER NOT NULL DEFAULT 0,
-  confirmed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
 
 -- Exchange rates (cached)
 CREATE TABLE exchange_rates (

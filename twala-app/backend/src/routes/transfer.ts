@@ -208,7 +208,6 @@ router.post('/offramp', async (req, res) => {
       kotaniReferenceId: referenceId, kotaniStatus: payoutStatus,
       goalId: goalId || undefined,
     });
-    const receiptConfirmation = await db.createReceiptConfirmation(tx.id, recipientPhone.trim());
     await db.createNotification({
       category: 'payment',
       title: transactionStatus === 'completed' ? 'Money sent successfully' : 'Transfer is being processed',
@@ -229,7 +228,6 @@ router.post('/offramp', async (req, res) => {
       amountUgx: quote.receiveAmountUgx,
       amountUsdc: quote.sendAmountUsdc,
       senderName: fromName,
-      confirmationCode: receiptConfirmation.code,
     });
 
     res.json({
@@ -245,7 +243,6 @@ router.post('/offramp', async (req, res) => {
         balance: newBalance.usdc,
         sms: null, // SMS sent async, check logs
         message: `${quote.receiveAmountUgx.toLocaleString()} UGX sent to ${recipientName.trim()} via ${recipientNetwork || 'MTN'} Mobile Money. Reference: ${referenceId.slice(-8)}`,
-        recipientConfirmationExpiresAt: receiptConfirmation.expiresAt,
       },
     });
   } catch (err) {
@@ -253,18 +250,6 @@ router.post('/offramp', async (req, res) => {
     console.error(`  ❌ Offramp error: ${msg}`);
     res.status(500).json({ success: false, message: `Transfer failed: ${msg}` });
   }
-});
-
-router.post('/:transactionId/confirm-recipient', async (req, res) => {
-  const code = String(req.body?.code || '');
-  if (!/^\d{6}$/.test(code)) return res.status(400).json({ success: false, message: 'Enter the six-digit code sent to the recipient.' });
-  try {
-    const transaction = await db.getTransaction(req.params.transactionId);
-    if (!transaction) return res.status(404).json({ success: false, message: 'Transfer not found.' });
-    const result = await db.verifyReceiptConfirmation(transaction.id, code);
-    if (result.confirmed) await db.createNotification({ category: 'payment', title: 'Recipient confirmed receipt', body: `${transaction.recipientName} confirmed receipt of UGX ${Number(transaction.amountUgx || 0).toLocaleString()}.` });
-    res.status(result.confirmed ? 200 : 400).json({ success: result.confirmed, data: result, message: result.message });
-  } catch (err) { res.status(500).json({ success: false, message: err instanceof Error ? err.message : String(err) }); }
 });
 
 // ---------------------------------------------------------------------------
