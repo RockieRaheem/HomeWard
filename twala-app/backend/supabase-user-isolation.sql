@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS recipients (
 CREATE INDEX IF NOT EXISTS idx_recipients_user_id ON recipients(user_id, created_at DESC);
 ALTER TABLE recipients ADD COLUMN IF NOT EXISTS monthly_plan_usdc NUMERIC(20,7);
 
+CREATE TABLE IF NOT EXISTS circles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL, description TEXT, recipient_id UUID REFERENCES recipients(id) ON DELETE SET NULL,
+  goal_id UUID REFERENCES goals(id) ON DELETE SET NULL, recurring_amount_usdc NUMERIC(20,7) NOT NULL,
+  purpose TEXT NOT NULL DEFAULT 'Family support', status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_circles_user_id ON circles(user_id, created_at DESC);
+
 
 -- After the scoped backend is deployed and this migration has run, make ownership mandatory.
 -- Do this only after confirming every real record has an owner:

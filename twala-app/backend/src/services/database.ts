@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile, AppNotification, Recipient } from '../types/index.js';
+import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile, AppNotification, Recipient, RecipientPassport, Circle } from '../types/index.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
@@ -623,6 +623,60 @@ export async function getRecipientTransferInsights(phone: string): Promise<{ com
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
   const sentThisMonthUsdc = records.filter((row: any) => new Date(row.created_at).getTime() >= monthStart).reduce((total: number, row: any) => total + Number(row.amount_usdc), 0);
   return { completedCount: records.length, usualAmountUsdc, sentThisMonthUsdc, lastNetwork: records[0]?.recipient_network || undefined };
+}
+
+export async function getRecipientPassport(id: string): Promise<RecipientPassport | null> {
+  const userId = requireUserId();
+  const { data, error } = await db().from('recipients').select('*').eq('id', id).eq('user_id', userId).single();
+  if (error && error.code === 'PGRST116') return null;
+  checkError(error, 'getRecipientPassport');
+  const recipient = recipientRow(data);
+  const insights = await getRecipientTransferInsights(recipient.phone);
+  const { data: latest, error: latestError } = await db().from('transactions').select('*').eq('user_id', userId).eq('type', 'sent').eq('status', 'completed').eq('recipient_phone', recipient.phone).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  checkError(latestError, 'getRecipientPassport latest payment');
+  return { ...recipient, transferCount: insights.completedCount, usualAmountUsdc: insights.usualAmountUsdc, lastSuccessfulNetwork: insights.lastNetwork as 'MTN' | 'AIRTEL' | undefined, lastSuccessfulPayment: latest ? txRow(latest) : undefined };
+}
+
+function circleRow(row: any): Omit<Circle, 'recipient' | 'goal' | 'contributionCount' | 'totalContributedUgx' | 'lastPayment'> {
+  return { id: row.id, name: row.name, description: row.description || undefined, recipientId: row.recipient_id || undefined, goalId: row.goal_id || undefined, recurringAmountUsdc: Number(row.recurring_amount_usdc || 0), purpose: row.purpose || 'Family support', status: row.status, createdAt: row.created_at };
+}
+
+export async function getCircles(): Promise<Circle[]> {
+  const userId = requireUserId();
+  const { data, error } = await db().from('circles').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  checkError(error, 'getCircles');
+  const recipients = await getRecipients();
+  const goals = await getGoals();
+  return Promise.all((data || []).map(async (row: any) => {
+    const circle = circleRow(row);
+    let query = db().from('transactions').select('*').eq('user_id', userId).eq('type', 'sent').eq('status', 'completed');
+    if (circle.goalId) query = query.eq('goal_id', circle.goalId); else if (circle.recipientId) {
+      const recipient = recipients.find((item) => item.id === circle.recipientId);
+      if (recipient) query = query.eq('recipient_phone', recipient.phone);
+    }
+    const { data: payments, error: paymentError } = await query.order('created_at', { ascending: false }).limit(100);
+    checkError(paymentError, 'getCircles payments');
+    const history = (payments || []).map(txRow);
+    return { ...circle, recipient: recipients.find((item) => item.id === circle.recipientId), goal: goals.find((item) => item.id === circle.goalId), contributionCount: history.length, totalContributedUgx: history.reduce((sum, item) => sum + (item.amountUgx || 0), 0), lastPayment: history[0] };
+  }));
+}
+
+export async function createCircle(input: Pick<Circle, 'name' | 'description' | 'recipientId' | 'goalId' | 'recurringAmountUsdc' | 'purpose'>): Promise<Circle> {
+  const { data, error } = await db().from('circles').insert({ user_id: requireUserId(), name: input.name, description: input.description || null, recipient_id: input.recipientId || null, goal_id: input.goalId || null, recurring_amount_usdc: input.recurringAmountUsdc, purpose: input.purpose || 'Family support', status: 'active' }).select().single();
+  checkError(error, 'createCircle');
+  return { ...circleRow(data), contributionCount: 0, totalContributedUgx: 0 };
+}
+
+export async function updateCircle(id: string, input: Partial<Pick<Circle, 'name' | 'description' | 'recipientId' | 'goalId' | 'recurringAmountUsdc' | 'purpose' | 'status'>>): Promise<Circle | null> {
+  const { data, error } = await db().from('circles').update({ name: input.name, description: input.description, recipient_id: input.recipientId, goal_id: input.goalId, recurring_amount_usdc: input.recurringAmountUsdc, purpose: input.purpose, status: input.status }).eq('id', id).eq('user_id', requireUserId()).select().single();
+  if (error && error.code === 'PGRST116') return null;
+  checkError(error, 'updateCircle');
+  return { ...circleRow(data), contributionCount: 0, totalContributedUgx: 0 };
+}
+
+export async function deleteCircle(id: string): Promise<void> {
+  const { error } = await db().from('circles').delete().eq('id', id).eq('user_id', requireUserId());
+  checkError(error, 'deleteCircle');
 }
 
 

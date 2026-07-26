@@ -15,6 +15,7 @@ import transakRouter from './routes/transak.js';
 import moneygramRouter from './routes/moneygram.js';
 import notificationsRouter from './routes/notifications.js';
 import recipientsRouter from './routes/recipients.js';
+import circlesRouter from './routes/circles.js';
 import * as stellar from './services/stellar.js';
 import * as db from './services/database.js';
 import * as kotani from './services/kotani.js';
@@ -78,6 +79,7 @@ app.use('/api/transak', requireAuth, transakRouter);
 app.use('/api/moneygram', requireAuth, moneygramRouter);
 app.use('/api/notifications', requireAuth, notificationsRouter);
 app.use('/api/recipients', requireAuth, recipientsRouter);
+app.use('/api/circles', requireAuth, circlesRouter);
 
 // POST /api/sms/test — quick SMS test endpoint (fire-and-forget)
 app.post('/api/sms/test', express.json(), async (req, res) => {

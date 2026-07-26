@@ -96,6 +96,20 @@ CREATE TABLE recipients (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE circles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  recipient_id UUID REFERENCES recipients(id) ON DELETE SET NULL,
+  goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
+  recurring_amount_usdc NUMERIC(20,7) NOT NULL,
+  purpose TEXT NOT NULL DEFAULT 'Family support',
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_circles_user_id ON circles(user_id, created_at DESC);
+
 
 -- Exchange rates (cached)
 CREATE TABLE exchange_rates (

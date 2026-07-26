@@ -82,6 +82,30 @@ export interface Recipient {
   createdAt: string;
 }
 
+export interface RecipientPassport extends Recipient {
+  transferCount: number;
+  usualAmountUsdc: number;
+  lastSuccessfulPayment?: Transaction;
+  lastSuccessfulNetwork?: 'MTN' | 'AIRTEL';
+}
+
+export interface Circle {
+  id: string;
+  name: string;
+  description?: string;
+  recipientId?: string;
+  goalId?: string;
+  recurringAmountUsdc: number;
+  purpose: string;
+  status: 'active' | 'paused';
+  createdAt: string;
+  recipient?: Recipient;
+  goal?: Goal;
+  contributionCount: number;
+  totalContributedUgx: number;
+  lastPayment?: Transaction;
+}
+
 export interface ExchangeRate {
   usdcToUgx: number;
   usdToUgx: number;
