@@ -62,6 +62,15 @@ export interface ChatSession {
   lastMessageAt: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  category: 'payment' | 'goal' | 'tip';
+  readAt?: string;
+  createdAt: string;
+}
+
 export interface ExchangeRate {
   usdcToUgx: number;
   usdToUgx: number;

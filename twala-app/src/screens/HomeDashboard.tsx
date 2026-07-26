@@ -1,9 +1,9 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, AppState, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, AppState, Image, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useCallback, useEffect } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import type { AppScreen } from '../components/BottomNavBar';
-import { walletApi, ratesApi, historyApi, goalsApi, eventsApi, type GoalData, type TransactionItem } from '../services/api';
+import { walletApi, ratesApi, historyApi, goalsApi, eventsApi, notificationsApi, type GoalData, type TransactionItem, type AppNotificationData } from '../services/api';
 
 const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
 
@@ -57,11 +57,12 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [rate, setRate] = useState(0);
   const [rateUpdated, setRateUpdated] = useState('');
+  const [notifications, setNotifications] = useState<AppNotificationData[]>([]);
 
   const fetchData = useCallback(() => {
     setError(null);
-    Promise.all([walletApi.info(), goalsApi.list(), ratesApi.get(), historyApi.list('all')])
-      .then(([wallet, goalResponse, rateResponse, history]) => {
+    Promise.all([walletApi.info(), goalsApi.list(), ratesApi.get(), historyApi.list('all'), notificationsApi.list()])
+      .then(([wallet, goalResponse, rateResponse, history, notificationResponse]) => {
         if (wallet.success && wallet.data) setBalance(wallet.data.balanceUsdc);
         if (goalResponse.success && Array.isArray(goalResponse.data)) setGoals(goalResponse.data);
         if (rateResponse.success && rateResponse.data) {
@@ -69,6 +70,7 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
           setRateUpdated(new Date(rateResponse.data.lastUpdated).toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit' }));
         }
         if (history.success && history.data) setTransactions(history.data.transactions?.slice(0, 3) || []);
+        if (notificationResponse.success && Array.isArray(notificationResponse.data)) setNotifications(notificationResponse.data);
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : 'We could not refresh your dashboard.'))
       .finally(() => { setLoading(false); setRefreshing(false); });
@@ -98,6 +100,12 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
     : 0;
   const totalSaved = goals.reduce((total, goal) => total + goal.savedAmountUgx, 0);
   const featuredGoals = [...goals].sort((a, b) => (b.savedAmountUgx / Math.max(1, b.targetAmountUgx)) - (a.savedAmountUgx / Math.max(1, a.targetAmountUgx))).slice(0, 3);
+  const unreadCount = notifications.filter((notification) => !notification.readAt).length;
+  const showNotifications = async () => {
+    const copy = notifications.length ? notifications.slice(0, 5).map((item) => `• ${item.title}\n${item.body}`).join('\n\n') : 'You are all caught up.';
+    Alert.alert('HomeWard updates', copy, [{ text: 'Close' }]);
+    if (unreadCount) { await notificationsApi.readAll(); setNotifications((items) => items.map((item) => ({ ...item, readAt: item.readAt || new Date().toISOString() }))); }
+  };
 
   return (
     <View style={styles.container}>
@@ -109,6 +117,7 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
           </View>
           <View style={styles.topActions}>
             <View style={styles.networkPill}><View style={styles.liveDot} /><Text style={styles.networkText}>Testnet</Text></View>
+            <TouchableOpacity style={styles.notificationButton} onPress={showNotifications} accessibilityLabel="Open notifications"><MaterialCommunityIcons name="bell-outline" size={20} color={Colors.primary} />{unreadCount ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View> : null}</TouchableOpacity>
             <View style={styles.avatar}><Text style={styles.avatarText}>{initials(user?.name)}</Text></View>
           </View>
         </View>
@@ -178,7 +187,7 @@ function QuickAction({ icon, label, tint, color, onPress }: { icon: string; labe
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background }, content: { paddingBottom: 124 },
-  topBar: { paddingHorizontal: 20, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 9 }, logo: { width: 36, height: 36, borderRadius: 11 }, brand: { fontFamily: 'Montserrat', fontWeight: '800', fontSize: 19, color: Colors.primary }, topActions: { flexDirection: 'row', alignItems: 'center', gap: 10 }, networkPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: '#E0F5EC', borderRadius: BorderRadius.full }, liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#1E9A70' }, networkText: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '700', fontSize: 10 }, avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.primaryFixed }, avatarText: { color: Colors.onPrimary, fontFamily: 'Inter', fontWeight: '800', fontSize: 12 },
+  topBar: { paddingHorizontal: 20, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 9 }, logo: { width: 36, height: 36, borderRadius: 11 }, brand: { fontFamily: 'Montserrat', fontWeight: '800', fontSize: 19, color: Colors.primary }, topActions: { flexDirection: 'row', alignItems: 'center', gap: 10 }, networkPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: '#E0F5EC', borderRadius: BorderRadius.full }, liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#1E9A70' }, networkText: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '700', fontSize: 10 }, notificationButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E0F5EC', alignItems: 'center', justifyContent: 'center', position: 'relative' }, notificationBadge: { position: 'absolute', right: -4, top: -4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: Colors.error, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 }, notificationBadgeText: { color: Colors.onPrimary, fontSize: 9, fontWeight: '800' }, avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.primaryFixed }, avatarText: { color: Colors.onPrimary, fontFamily: 'Inter', fontWeight: '800', fontSize: 12 },
   welcome: { paddingHorizontal: 20, paddingTop: 25, paddingBottom: 20 }, greeting: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 14 }, name: { color: Colors.onSurface, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 29, marginTop: 2 }, wave: { fontSize: 23 }, subtitle: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 13, marginTop: 6 }, errorBanner: { marginHorizontal: 20, backgroundColor: Colors.errorContainer, borderRadius: 14, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 8 }, errorText: { flex: 1, color: Colors.error, fontFamily: 'Inter', fontSize: 12 }, loader: { marginTop: 70 },
   balanceCard: { marginHorizontal: 20, backgroundColor: Colors.primary, borderRadius: 24, padding: 21, overflow: 'hidden', ...Shadow.level2 }, balanceGlowOne: { position: 'absolute', width: 190, height: 190, borderRadius: 95, backgroundColor: '#08725B', opacity: 0.65, right: -74, top: -95 }, balanceGlowTwo: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 18, borderColor: '#0A725C', opacity: 0.55, right: 42, bottom: -54 }, balanceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, balanceCaption: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 10, letterSpacing: 1.15, fontWeight: '800' }, balanceTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 7, marginTop: 7 }, balanceValue: { color: Colors.onPrimary, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 34 }, balanceCurrency: { color: Colors.primaryFixed, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 }, walletIcon: { width: 43, height: 43, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.10)', justifyContent: 'center', alignItems: 'center' }, balanceFooter: { marginTop: 25, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.16)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, balanceFootItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, balanceFootText: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 12, fontWeight: '600' }, secureChip: { flexDirection: 'row', alignItems: 'center', gap: 5 }, secureText: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 10, fontWeight: '700' },
   quickActions: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, gap: 10 }, quickAction: { flex: 1, backgroundColor: Colors.surfaceContainerLowest, borderRadius: 17, paddingVertical: 12, alignItems: 'center', gap: 7, borderWidth: 1, borderColor: Colors.outlineVariant + '40' }, quickIcon: { width: 39, height: 39, borderRadius: 13, justifyContent: 'center', alignItems: 'center' }, quickLabel: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '700', fontSize: 11, textAlign: 'center' },

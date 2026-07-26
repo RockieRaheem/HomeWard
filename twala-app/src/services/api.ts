@@ -138,6 +138,15 @@ export interface ChatSessionData {
   lastMessageAt: string;
 }
 
+export interface AppNotificationData {
+  id: string;
+  title: string;
+  body: string;
+  category: 'payment' | 'goal' | 'tip';
+  readAt?: string;
+  createdAt: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -303,6 +312,11 @@ export const chatApi = {
 export const ratesApi = {
   get: () =>
     request<RateData>('/rates'),
+};
+
+export const notificationsApi = {
+  list: () => request<AppNotificationData[]>('/notifications'),
+  readAll: () => request<{ success: boolean }>('/notifications/read-all', { method: 'POST' }),
 };
 
 export const authApi = {

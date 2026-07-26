@@ -1,6 +1,6 @@
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile } from '../types/index.js';
+import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile, AppNotification } from '../types/index.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
@@ -553,6 +553,27 @@ export async function clearChatMessages(sessionId?: string): Promise<void> {
     });
     checkError(seedErr, 'clearChatMessages (seed)');
   }
+}
+
+// ---------------------------------------------------------------------------
+// In-app notifications (always scoped to the authenticated owner)
+// ---------------------------------------------------------------------------
+
+export async function createNotification(input: { title: string; body: string; category: AppNotification['category'] }): Promise<void> {
+  const { error } = await db().from('notifications').insert({ user_id: requireUserId(), ...input });
+  checkError(error, 'createNotification');
+}
+
+export async function getNotifications(): Promise<AppNotification[]> {
+  const userId = requireUserId();
+  const { data, error } = await db().from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(30);
+  checkError(error, 'getNotifications');
+  return (data || []).map((row: any) => ({ id: row.id, title: row.title, body: row.body, category: row.category, readAt: row.read_at || undefined, createdAt: row.created_at }));
+}
+
+export async function markNotificationsRead(): Promise<void> {
+  const { error } = await db().from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', requireUserId()).is('read_at', null);
+  checkError(error, 'markNotificationsRead');
 }
 
 // ---------------------------------------------------------------------------

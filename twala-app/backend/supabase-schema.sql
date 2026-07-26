@@ -73,6 +73,16 @@ CREATE TABLE chat_messages (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('payment', 'goal', 'tip')),
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Exchange rates (cached)
 CREATE TABLE exchange_rates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

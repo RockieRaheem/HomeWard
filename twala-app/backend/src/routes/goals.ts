@@ -79,6 +79,11 @@ router.post('/:id/contribute', async (req, res) => {
     status: 'completed',
     goalId: goal.id,
   });
+  await db.createNotification({
+    category: 'goal',
+    title: 'Goal contribution recorded',
+    body: `UGX ${Number(amountUgx).toLocaleString()} was added to ${goal.title}.`,
+  });
 
   res.json({ success: true, data: goal });
 });

@@ -41,6 +41,7 @@ router.post('/demo-fund', async (req, res) => {
       purpose: 'Demo funding — simulated MoneyGram AED cash-in to USDC',
       stellarTxHash, kotaniStatus: 'NOT_APPLICABLE',
     });
+    await db.createNotification({ category: 'payment', title: 'Testnet cash-in complete', body: `${amountUsdc.toFixed(2)} USDC is available in your HomeWard wallet.` });
     notifyChange();
 
     res.json({
@@ -206,6 +207,11 @@ router.post('/offramp', async (req, res) => {
       status: transactionStatus, purpose: purpose.trim(), stellarTxHash,
       kotaniReferenceId: referenceId, kotaniStatus: payoutStatus,
       goalId: goalId || undefined,
+    });
+    await db.createNotification({
+      category: 'payment',
+      title: transactionStatus === 'completed' ? 'Money sent successfully' : 'Transfer is being processed',
+      body: `UGX ${quote.receiveAmountUgx.toLocaleString()} ${transactionStatus === 'completed' ? 'was sent to' : 'is on its way to'} ${recipientName.trim()}.`,
     });
 
     // Step 6: Contribute to goal if goalId provided
