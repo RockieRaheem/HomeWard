@@ -1,56 +1,52 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Dimensions, ActivityIndicator, AppState, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, AppState, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useCallback, useEffect } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import type { AppScreen } from '../components/BottomNavBar';
-import { walletApi, ratesApi, historyApi, goalsApi, eventsApi, type GoalData } from '../services/api';
+import { walletApi, ratesApi, historyApi, goalsApi, eventsApi, type GoalData, type TransactionItem } from '../services/api';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
 
 function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
   return 'Good evening';
 }
 
-function formatAmount(usdc: number): string {
-  return usdc.toFixed(2);
+function formatUgx(value: number) {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+  return value.toLocaleString();
 }
 
-function formatUgx(ugx: number): string {
-  if (ugx >= 1_000_000) return `${(ugx / 1_000_000).toFixed(1)}M`;
-  if (ugx >= 1_000) return `${(ugx / 1_000).toFixed(1)}K`;
-  return ugx.toLocaleString();
+function initials(name?: string) {
+  return (name || 'H').split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase();
 }
 
-function getGoalIcon(title: string): string {
-  const t = title.toLowerCase();
-  if (t.includes('home') || t.includes('house')) return 'home';
-  if (t.includes('land') || t.includes('wakiso')) return 'grass';
-  if (t.includes('school') || t.includes('fees') || t.includes('education')) return 'school';
-  if (t.includes('car') || t.includes('vehicle')) return 'car';
-  if (t.includes('business') || t.includes('shop')) return 'store';
-  return 'piggy-bank';
+function goalIcon(title: string) {
+  const value = title.toLowerCase();
+  if (value.includes('home') || value.includes('house')) return 'home-variant';
+  if (value.includes('land')) return 'grass';
+  if (value.includes('school') || value.includes('fees')) return 'school';
+  if (value.includes('car')) return 'car';
+  if (value.includes('business')) return 'storefront-outline';
+  return 'flag-variant';
 }
 
-const GOAL_COLORS = [
-  { iconBg: Colors.primaryFixed, iconColor: Colors.primary, progressColor: Colors.primary },
-  { iconBg: Colors.tertiaryFixed, iconColor: Colors.tertiary, progressColor: Colors.tertiaryContainer },
-  { iconBg: Colors.secondaryFixed, iconColor: Colors.secondary, progressColor: Colors.secondary },
+function timeAgo(date: string) {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 60_000));
+  if (minutes < 60) return `${minutes || 1}m ago`;
+  if (minutes < 1_440) return `${Math.floor(minutes / 60)}h ago`;
+  if (minutes < 10_080) return `${Math.floor(minutes / 1_440)}d ago`;
+  return new Date(date).toLocaleDateString('en-UG', { month: 'short', day: 'numeric' });
+}
+
+const goalAccents = [
+  { wash: '#E0F5EC', accent: Colors.primary, icon: Colors.primary },
+  { wash: '#DDF4FF', accent: Colors.tertiary, icon: Colors.tertiary },
+  { wash: '#FFF0D9', accent: Colors.secondary, icon: Colors.secondary },
 ];
-
-function getTimeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { onNavigate: (route: AppScreen) => void; onNavigateGoal?: (id: string) => void; user?: { id: string; name: string; phone: string } }) {
   const [refreshing, setRefreshing] = useState(false);
@@ -58,319 +54,136 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);
   const [goals, setGoals] = useState<GoalData[]>([]);
-  const [recentTxs, setRecentTxs] = useState<any[]>([]);
-  const [ratePairs, setRatePairs] = useState<{ from: string; to: string }[]>([]);
-  const [rateIndex, setRateIndex] = useState(0);
-  const [changeVer, setChangeVer] = useState(0);
+  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
+  const [rate, setRate] = useState(0);
+  const [rateUpdated, setRateUpdated] = useState('');
 
   const fetchData = useCallback(() => {
     setError(null);
-    Promise.all([
-      walletApi.info(),
-      goalsApi.list(),
-      ratesApi.get(),
-      historyApi.list('all'),
-    ]).then(([walRes, goalsRes, rateRes, historyRes]) => {
-      if (walRes.success && walRes.data) {
-        setBalance(walRes.data.balanceUsdc);
-      }
-      if (goalsRes.success && Array.isArray(goalsRes.data)) {
-        setGoals(goalsRes.data);
-      }
-      if (rateRes.success && rateRes.data) {
-        const pairs = [
-          { from: '1 USD', to: `${rateRes.data.usdToUgx.toLocaleString()} UGX` },
-          { from: '1 USDC', to: `${(rateRes.data.usdcToUgx / 1000).toFixed(1)}K UGX` },
-          { from: '1 GBP', to: `${(rateRes.data.usdToUgx * 1.28).toLocaleString()} UGX` },
-        ];
-        setRatePairs(pairs);
-      }
-      if (historyRes.success && historyRes.data) {
-        setRecentTxs(historyRes.data.transactions?.slice(0, 3) || []);
-      }
-    }).catch((err) => {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-    }).finally(() => { setLoading(false); setRefreshing(false); });
+    Promise.all([walletApi.info(), goalsApi.list(), ratesApi.get(), historyApi.list('all')])
+      .then(([wallet, goalResponse, rateResponse, history]) => {
+        if (wallet.success && wallet.data) setBalance(wallet.data.balanceUsdc);
+        if (goalResponse.success && Array.isArray(goalResponse.data)) setGoals(goalResponse.data);
+        if (rateResponse.success && rateResponse.data) {
+          setRate(rateResponse.data.usdcToUgx);
+          setRateUpdated(new Date(rateResponse.data.lastUpdated).toLocaleTimeString('en-UG', { hour: '2-digit', minute: '2-digit' }));
+        }
+        if (history.success && history.data) setTransactions(history.data.transactions?.slice(0, 3) || []);
+      })
+      .catch((reason) => setError(reason instanceof Error ? reason.message : 'We could not refresh your dashboard.'))
+      .finally(() => { setLoading(false); setRefreshing(false); });
   }, []);
 
-  useEffect(() => { fetchData(); }, []);
-
-  // A hosted Transak checkout temporarily backgrounds the app. Refreshing when
-  // it becomes active reads the wallet balance directly from Stellar again.
+  useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') fetchData();
-    });
+    const subscription = AppState.addEventListener('change', (state) => { if (state === 'active') fetchData(); });
     return () => subscription.remove();
   }, [fetchData]);
-
-  // Poll for backend-triggered changes every 3s
   useEffect(() => {
-    let lastVer = 0;
+    let lastVersion = 0;
     const interval = setInterval(async () => {
       try {
-        const res = await eventsApi.version();
-        if (res.success && res.data && res.data.version !== lastVer) {
-          lastVer = res.data.version;
+        const response = await eventsApi.version();
+        if (response.success && response.data && response.data.version !== lastVersion) {
+          lastVersion = response.data.version;
           fetchData();
         }
-      } catch { /* offline — skip */ }
-    }, 3000);
+      } catch { /* offline: retain the last reliable view */ }
+    }, 3_000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchData();
-  }, [fetchData]);
-
-  const cycleRate = () => setRateIndex((i) => (i + 1) % (ratePairs.length || 1));
-
-  const overallProgress = goals.length > 0
-    ? Math.round(goals.reduce((s, g) => s + (g.savedAmountUgx / g.targetAmountUgx) * 100, 0) / goals.length)
+  const overallProgress = goals.length
+    ? Math.round(goals.reduce((total, goal) => total + Math.min(100, (goal.savedAmountUgx / Math.max(1, goal.targetAmountUgx)) * 100), 0) / goals.length)
     : 0;
-
-  const totalSavedUgx = goals.reduce((s, g) => s + g.savedAmountUgx, 0);
+  const totalSaved = goals.reduce((total, goal) => total + goal.savedAmountUgx, 0);
+  const featuredGoals = [...goals].sort((a, b) => (b.savedAmountUgx / Math.max(1, b.targetAmountUgx)) - (a.savedAmountUgx / Math.max(1, a.targetAmountUgx))).slice(0, 3);
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image source={HOMEWARD_LOGO} style={styles.brandLogo} accessibilityLabel="HomeWard logo" />
-            <View>
-              <Text style={styles.appTitle}>HomeWard</Text>
-              <Text style={styles.appSub}>Your home money companion</Text>
-            </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={Colors.primary} />}>
+        <View style={styles.topBar}>
+          <View style={styles.brandLockup}>
+            <Image source={HOMEWARD_LOGO} style={styles.logo} accessibilityLabel="HomeWard logo" />
+            <Text style={styles.brand}>HomeWard</Text>
+          </View>
+          <View style={styles.topActions}>
+            <View style={styles.networkPill}><View style={styles.liveDot} /><Text style={styles.networkText}>Testnet</Text></View>
+            <View style={styles.avatar}><Text style={styles.avatarText}>{initials(user?.name)}</Text></View>
           </View>
         </View>
 
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeSub}>{getGreeting()},</Text>
-          <Text style={styles.welcomeName}>{user?.name || 'Welcome'}</Text>
-          <Text style={styles.welcomeTagline}>Your financial journey continues here</Text>
+        <View style={styles.welcome}>
+          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.name}>{user?.name?.split(' ')[0] || 'there'} <Text style={styles.wave}>👋</Text></Text>
+          <Text style={styles.subtitle}>Everything you send home, in one clear view.</Text>
         </View>
 
-        {error && (
-          <View style={styles.errorBanner}>
-            <MaterialCommunityIcons name="alert-circle" size={18} color={Colors.error} />
-            <Text style={styles.errorText}>{error}</Text>
+        {error ? <TouchableOpacity style={styles.errorBanner} onPress={fetchData}><MaterialCommunityIcons name="refresh" size={18} color={Colors.error} /><Text style={styles.errorText}>{error} Tap to retry.</Text></TouchableOpacity> : null}
+
+        {loading ? <ActivityIndicator color={Colors.primary} size="large" style={styles.loader} /> : <>
+          <View style={styles.balanceCard}>
+            <View style={styles.balanceGlowOne} /><View style={styles.balanceGlowTwo} />
+            <View style={styles.balanceHeader}><View><Text style={styles.balanceCaption}>AVAILABLE TO SEND</Text><View style={styles.balanceTitleRow}><Text style={styles.balanceValue}>${balance.toFixed(2)}</Text><Text style={styles.balanceCurrency}>USDC</Text></View></View><View style={styles.walletIcon}><MaterialCommunityIcons name="wallet-outline" size={23} color={Colors.primaryFixed} /></View></View>
+            <View style={styles.balanceFooter}><View style={styles.balanceFootItem}><MaterialCommunityIcons name="swap-horizontal" size={16} color={Colors.primaryFixed} /><Text style={styles.balanceFootText}>{rate ? `≈ UGX ${(balance * rate).toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'Rate updating...'}</Text></View><View style={styles.secureChip}><MaterialCommunityIcons name="shield-check-outline" size={15} color={Colors.onPrimary} /><Text style={styles.secureText}>Secured on Stellar</Text></View></View>
           </View>
-        )}
 
-        {loading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
-        ) : (
-          <>
-            <View style={styles.progressCard}>
-              <View style={styles.progressRing}>
-                <View style={styles.ringOuter}>
-                  <View style={styles.ringInner}>
-                    <Text style={styles.ringPercent}>{overallProgress}%</Text>
-                    <Text style={styles.ringLabel}>overall</Text>
-                  </View>
-                </View>
-                <View style={styles.progressRight}>
-                  <View style={styles.onTrackBadge}>
-                    <MaterialCommunityIcons name="check-circle" size={14} color={Colors.onSecondaryContainer} />
-                    <Text style={styles.onTrackText}>On Track</Text>
-                  </View>
-                  <View style={styles.progressStatItem}>
-                    <MaterialCommunityIcons name="calendar-check" size={16} color={Colors.onPrimary} />
-                    <Text style={styles.progressStatText}>Balance: ${formatAmount(balance)}</Text>
-                  </View>
-                  <View style={styles.progressStatItem}>
-                    <MaterialCommunityIcons name="trophy" size={16} color={Colors.onPrimary} />
-                    <Text style={styles.progressStatText}>{formatUgx(totalSavedUgx)} UGX saved</Text>
-                  </View>
-                </View>
-              </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${overallProgress}%` }]} />
-              </View>
-            </View>
+          <View style={styles.quickActions}>
+            <QuickAction icon="send" label="Send money" tint="#E0F5EC" color={Colors.primary} onPress={() => onNavigate('Transfer')} />
+            <QuickAction icon="cash-plus" label="Cash in" tint="#FFF0D9" color={Colors.secondary} onPress={() => onNavigate('Transfer')} />
+            <QuickAction icon="message-processing-outline" label="Ask HomeWard" tint="#DDF4FF" color={Colors.tertiary} onPress={() => onNavigate('Assistant')} />
+          </View>
 
-            <View style={styles.goalsSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Active Goals</Text>
-                <TouchableOpacity>
-                  <Text style={styles.seeAll}>Manage</Text>
-                </TouchableOpacity>
-              </View>
-              {goals.length === 0 ? (
-                <Text style={{ textAlign: 'center', color: Colors.onSurfaceVariant, fontFamily: 'Inter', paddingVertical: 20 }}>No goals yet</Text>
-              ) : (
-                goals.map((goal, index) => {
-                  const gc = GOAL_COLORS[index % GOAL_COLORS.length];
-                  const pct = Math.round((goal.savedAmountUgx / goal.targetAmountUgx) * 100);
-                  return (
-                    <TouchableOpacity
-                      key={goal.id || index}
-                      style={styles.goalCard}
-                      activeOpacity={0.7}
-                      onPress={() => onNavigateGoal?.(goal.id)}
-                    >
-                      <View style={styles.goalTop}>
-                        <View style={styles.goalInfo}>
-                          <View style={[styles.goalIconBox, { backgroundColor: gc.iconBg }]}>
-                            <MaterialCommunityIcons name={getGoalIcon(goal.title) as any} size={22} color={gc.iconColor} />
-                          </View>
-                          <View style={styles.goalTextWrap}>
-                            <Text style={styles.goalTitle}>{goal.title}</Text>
-                            <View style={styles.goalPhaseRow}>
-                              <View style={[styles.goalPhaseDot, { backgroundColor: gc.progressColor }]} />
-                              <Text style={styles.goalPhase}>{goal.status || 'In Progress'}</Text>
-                            </View>
-                          </View>
-                        </View>
-                        <Text style={[styles.goalPercent, { color: gc.progressColor }]}>{pct}%</Text>
-                      </View>
-                      <View style={styles.goalProgressRow}>
-                        <Text style={styles.goalSaved}>{formatUgx(goal.savedAmountUgx)} <Text style={styles.goalUnit}>UGX</Text></Text>
-                        <Text style={styles.goalTarget}>Target: {formatUgx(goal.targetAmountUgx)}</Text>
-                      </View>
-                      <View style={styles.goalBarBg}>
-                        <View style={[styles.goalBarFill, { width: `${pct}%`, backgroundColor: gc.progressColor }]} />
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })
-              )}
-            </View>
+          <View style={styles.sectionHeader}>
+            <View><Text style={styles.sectionEyebrow}>HOME PROJECTS</Text><Text style={styles.sectionTitle}>Your goals</Text></View>
+            <TouchableOpacity style={styles.textAction} onPress={() => onNavigate('Goals')}><Text style={styles.textActionLabel}>See all</Text><MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} /></TouchableOpacity>
+          </View>
 
-            <View style={styles.infoGrid}>
-              <TouchableOpacity style={styles.infoCard} onPress={cycleRate} activeOpacity={0.7}>
-                <View style={styles.infoCardHeader}>
-                  <MaterialCommunityIcons name="currency-usd" size={20} color={Colors.secondary} />
-                  <Text style={styles.infoCardBadge}>
-                    <MaterialCommunityIcons name="sync" size={12} color={Colors.secondary} /> Live
-                  </Text>
-                </View>
-                <Text style={styles.infoLabel}>Exchange Rate</Text>
-                <Text style={styles.infoValue}>
-                  {ratePairs.length > 0
-                    ? `${ratePairs[rateIndex % ratePairs.length].from} = ${ratePairs[rateIndex % ratePairs.length].to}`
-                    : '1 USD = 3,750 UGX'}
-                </Text>
-                <Text style={styles.infoTap}>Tap to cycle</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.supportCard} activeOpacity={0.7} onPress={() => onNavigate('Assistant')}>
-                <MaterialCommunityIcons name="robot" size={28} color={Colors.onTertiary} style={styles.supportIconTop} />
-                <Text style={styles.supportLabel}>Need help?</Text>
-                <Text style={styles.supportValue}>Chat with HomeWard</Text>
-                <View style={styles.supportArrow}>
-                  <MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onTertiary} />
-                </View>
-              </TouchableOpacity>
-            </View>
+          {featuredGoals.length ? <>
+            <View style={styles.goalSummary}><View style={styles.summaryRing}><Text style={styles.summaryRingValue}>{overallProgress}%</Text></View><View style={styles.summaryCopy}><Text style={styles.summaryTitle}>{goals.length} active goal{goals.length === 1 ? '' : 's'}</Text><Text style={styles.summaryText}>UGX {formatUgx(totalSaved)} saved across your home projects</Text></View><TouchableOpacity style={styles.summaryArrow} onPress={() => onNavigate('Goals')}><MaterialCommunityIcons name="chevron-right" size={22} color={Colors.primary} /></TouchableOpacity></View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.goalRail}>
+              {featuredGoals.map((goal, index) => {
+                const accent = goalAccents[index % goalAccents.length];
+                const progress = Math.min(100, Math.round((goal.savedAmountUgx / Math.max(1, goal.targetAmountUgx)) * 100));
+                return <TouchableOpacity key={goal.id} style={styles.goalCard} activeOpacity={0.8} onPress={() => onNavigateGoal?.(goal.id)}>
+                  <View style={styles.goalCardHeader}><View style={[styles.goalIcon, { backgroundColor: accent.wash }]}><MaterialCommunityIcons name={goalIcon(goal.title) as any} size={21} color={accent.icon} /></View><View style={[styles.goalStatus, { backgroundColor: accent.wash }]}><View style={[styles.goalStatusDot, { backgroundColor: accent.accent }]} /><Text style={[styles.goalStatusText, { color: accent.accent }]}>{progress}%</Text></View></View>
+                  <Text numberOfLines={1} style={styles.goalName}>{goal.title}</Text><Text style={styles.goalAmount}>UGX {formatUgx(goal.savedAmountUgx)} <Text style={styles.goalTarget}>of {formatUgx(goal.targetAmountUgx)}</Text></Text>
+                  <View style={styles.goalProgress}><View style={[styles.goalProgressFill, { width: `${progress}%`, backgroundColor: accent.accent }]} /></View><Text style={styles.goalHint}>{progress >= 100 ? 'Goal reached — well done' : `${100 - progress}% left to reach this goal`}</Text>
+                </TouchableOpacity>;
+              })}
+              <TouchableOpacity style={styles.newGoalCard} onPress={() => onNavigate('Goals')}><View style={styles.newGoalIcon}><MaterialCommunityIcons name="plus" size={25} color={Colors.primary} /></View><Text style={styles.newGoalTitle}>Create a goal</Text><Text style={styles.newGoalText}>Plan your next project</Text></TouchableOpacity>
+            </ScrollView>
+          </> : <TouchableOpacity style={styles.emptyGoalCard} onPress={() => onNavigate('Goals')}><View style={styles.newGoalIcon}><MaterialCommunityIcons name="flag-plus" size={24} color={Colors.primary} /></View><View style={{ flex: 1 }}><Text style={styles.emptyGoalTitle}>Build something meaningful</Text><Text style={styles.emptyGoalText}>Create a goal for land, school fees or a family project.</Text></View><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.primary} /></TouchableOpacity>}
 
-            <View style={styles.activityPreview}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Activity</Text>
-                <TouchableOpacity onPress={() => onNavigate('History')}>
-                  <Text style={styles.seeAll}>View all</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.activityCard}>
-                {recentTxs.length === 0 ? (
-                  <Text style={{ textAlign: 'center', color: Colors.onSurfaceVariant, fontFamily: 'Inter', paddingVertical: 10 }}>No recent activity</Text>
-                ) : (
-                  recentTxs.map((tx, i) => (
-                    <React.Fragment key={tx.id || i}>
-                      <View style={styles.activityItem}>
-                        <View style={[styles.activityDot, { backgroundColor: tx.type === 'received' ? Colors.secondary : Colors.primary }]} />
-                        <Text style={styles.activityText}>{tx.type === 'received' ? 'Received' : 'Sent'} ${formatAmount(tx.amountUsdc)} to {tx.recipientName}</Text>
-                        <Text style={styles.activityTime}>{getTimeAgo(tx.createdAt)}</Text>
-                      </View>
-                      {i < recentTxs.length - 1 && <View style={styles.activityDivider} />}
-                    </React.Fragment>
-                  ))
-                )}
-              </View>
-            </View>
-          </>
-        )}
+          <TouchableOpacity style={styles.rateCard} onPress={() => onNavigate('Transfer')} activeOpacity={0.8}>
+            <View style={styles.rateIcon}><MaterialCommunityIcons name="chart-line" size={21} color={Colors.tertiary} /></View><View style={{ flex: 1 }}><Text style={styles.rateLabel}>Today’s exchange rate</Text><Text style={styles.rateValue}>{rate ? `1 USDC = UGX ${rate.toLocaleString()}` : 'Fetching the latest rate'}</Text></View><View style={styles.rateMeta}><Text style={styles.rateMetaText}>{rateUpdated || 'Live'}</Text><MaterialCommunityIcons name="chevron-right" size={18} color={Colors.outline} /></View>
+          </TouchableOpacity>
+
+          <View style={styles.sectionHeader}>
+            <View><Text style={styles.sectionEyebrow}>MONEY MOVEMENT</Text><Text style={styles.sectionTitle}>Recent activity</Text></View>
+            <TouchableOpacity style={styles.textAction} onPress={() => onNavigate('History')}><Text style={styles.textActionLabel}>View history</Text><MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} /></TouchableOpacity>
+          </View>
+          <View style={styles.activityCard}>
+            {transactions.length ? transactions.map((transaction, index) => <React.Fragment key={transaction.id}><TouchableOpacity style={styles.activityRow} onPress={() => onNavigate('History')}><View style={[styles.activityIcon, { backgroundColor: transaction.type === 'sent' ? '#E0F5EC' : '#FFF0D9' }]}><MaterialCommunityIcons name={transaction.type === 'sent' ? 'arrow-top-right' : 'arrow-bottom-left'} size={21} color={transaction.type === 'sent' ? Colors.primary : Colors.secondary} /></View><View style={styles.activityInfo}><Text style={styles.activityName} numberOfLines={1}>{transaction.type === 'sent' ? `To ${transaction.recipientName}` : `From ${transaction.recipientName || 'HomeWard'}`}</Text><Text style={styles.activitySub}>{transaction.purpose || 'Transfer'} · {timeAgo(transaction.createdAt)}</Text></View><View style={styles.activityAmount}><Text style={styles.activityUsdc}>{transaction.type === 'sent' ? '−' : '+'}${transaction.amountUsdc.toFixed(2)}</Text><Text style={[styles.activityStatus, { color: transaction.status === 'completed' ? Colors.primary : transaction.status === 'failed' ? Colors.error : Colors.secondary }]}>{transaction.status === 'completed' ? 'Completed' : transaction.status === 'failed' ? 'Failed' : 'Pending'}</Text></View></TouchableOpacity>{index < transactions.length - 1 ? <View style={styles.divider} /> : null}</React.Fragment>) : <View style={styles.emptyActivity}><MaterialCommunityIcons name="receipt-text-outline" size={26} color={Colors.outline} /><Text style={styles.emptyActivityText}>Your transfers will appear here.</Text></View>}
+          </View>
+        </>}
       </ScrollView>
     </View>
   );
 }
 
+function QuickAction({ icon, label, tint, color, onPress }: { icon: string; label: string; tint: string; color: string; onPress: () => void }) {
+  return <TouchableOpacity style={styles.quickAction} onPress={onPress} activeOpacity={0.78}><View style={[styles.quickIcon, { backgroundColor: tint }]}><MaterialCommunityIcons name={icon as any} size={21} color={color} /></View><Text style={styles.quickLabel}>{label}</Text></TouchableOpacity>;
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { paddingBottom: 120 },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.containerPaddingMobile, paddingVertical: Spacing.stackSm,
-    backgroundColor: Colors.surface, ...Shadow.level1,
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm },
-  brandLogo: { width: 42, height: 42, borderRadius: 13 },
-  appTitle: { fontSize: Typography.headlineMd.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
-  appSub: { fontSize: 11, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant, marginTop: -2 },
-  welcomeSection: { paddingHorizontal: Spacing.containerPaddingMobile, paddingTop: Spacing.gutter },
-  welcomeSub: { fontSize: Typography.bodyMd.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant },
-  welcomeName: { fontSize: Typography.displayLgMobile.fontSize, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.primary, marginTop: 2 },
-  welcomeTagline: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 4, opacity: 0.8 },
-  errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.errorContainer, marginHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.stackMd, padding: Spacing.stackMd, borderRadius: BorderRadius.lg },
-  errorText: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.error },
-  progressCard: {
-    marginHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.gutter,
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.xl,
-    padding: Spacing.gutter, ...Shadow.level2, overflow: 'hidden',
-  },
-  progressRing: { flexDirection: 'row', gap: Spacing.stackLg, alignItems: 'center' },
-  ringOuter: { width: 100, height: 100, borderRadius: 50, borderWidth: 6, borderColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', position: 'relative' },
-  ringInner: { alignItems: 'center' },
-  ringPercent: { fontSize: 28, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.onPrimary },
-  ringLabel: { fontSize: 10, fontFamily: 'Inter', fontWeight: '500', color: Colors.onPrimary, opacity: 0.7, marginTop: -2 },
-  progressRight: { flex: 1, gap: Spacing.stackSm },
-  onTrackBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.secondaryContainer, paddingHorizontal: 12, paddingVertical: 6, borderRadius: BorderRadius.full, alignSelf: 'flex-start' },
-  onTrackText: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSecondaryContainer },
-  progressStatItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  progressStatText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onPrimary, opacity: 0.85 },
-  progressBarBg: { width: '100%', height: 8, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: BorderRadius.full, marginTop: Spacing.gutter, overflow: 'hidden' },
-  progressBarFill: { height: '100%', backgroundColor: Colors.secondaryContainer, borderRadius: BorderRadius.full },
-  goalsSection: { paddingHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.gutter },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingRight: Spacing.containerPaddingMobile, marginBottom: Spacing.stackMd },
-  sectionTitle: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
-  seeAll: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.secondary },
-  goalCard: { backgroundColor: Colors.surface, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.outlineVariant + '33', ...Shadow.level1, marginBottom: Spacing.stackMd },
-  goalTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.stackSm },
-  goalInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm },
-  goalIconBox: { width: 44, height: 44, borderRadius: BorderRadius.lg, justifyContent: 'center', alignItems: 'center' },
-  goalTextWrap: {},
-  goalTitle: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurface },
-  goalPhaseRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  goalPhaseDot: { width: 6, height: 6, borderRadius: 3 },
-  goalPhase: { fontSize: 10, fontFamily: 'Inter', color: Colors.onSurfaceVariant, letterSpacing: 0.3, textTransform: 'uppercase' },
-  goalPercent: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '700' },
-  goalProgressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  goalSaved: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant },
-  goalUnit: { fontSize: 10 },
-  goalTarget: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', color: Colors.outline },
-  goalBarBg: { width: '100%', height: 8, backgroundColor: Colors.surfaceContainerHigh, borderRadius: BorderRadius.full, overflow: 'hidden' },
-  goalBarFill: { height: '100%', borderRadius: BorderRadius.full },
-  infoGrid: { flexDirection: 'row', gap: Spacing.stackMd, paddingHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.gutter },
-  infoCard: { flex: 1, backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.outlineVariant + '1A', ...Shadow.level1 },
-  infoCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.stackSm },
-  infoCardBadge: { fontSize: 10, fontFamily: 'Inter', fontWeight: '600', color: Colors.secondary, flexDirection: 'row', alignItems: 'center' },
-  infoLabel: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant },
-  infoValue: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary, marginTop: 4 },
-  infoTap: { fontSize: 10, fontFamily: 'Inter', color: Colors.outline, marginTop: 4, fontStyle: 'italic' },
-  supportCard: { flex: 1, backgroundColor: Colors.tertiary, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, overflow: 'hidden', position: 'relative', justifyContent: 'space-between' },
-  supportIconTop: { marginBottom: Spacing.stackSm },
-  supportLabel: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onTertiary, opacity: 0.8 },
-  supportValue: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.onTertiary, marginTop: 2 },
-  supportArrow: { position: 'absolute', bottom: 12, right: 12, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  activityPreview: { paddingHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.gutter },
-  activityCard: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: BorderRadius.xl, padding: Spacing.stackMd, borderWidth: 1, borderColor: Colors.outlineVariant + '1A', ...Shadow.level1 },
-  activityItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm, paddingVertical: 6 },
-  activityDot: { width: 8, height: 8, borderRadius: 4 },
-  activityText: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurface },
-  activityTime: { fontSize: 11, fontFamily: 'Inter', color: Colors.outline },
-  activityDivider: { height: 1, backgroundColor: Colors.outlineVariant + '33', marginVertical: 2 },
+  container: { flex: 1, backgroundColor: Colors.background }, content: { paddingBottom: 124 },
+  topBar: { paddingHorizontal: 20, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 9 }, logo: { width: 36, height: 36, borderRadius: 11 }, brand: { fontFamily: 'Montserrat', fontWeight: '800', fontSize: 19, color: Colors.primary }, topActions: { flexDirection: 'row', alignItems: 'center', gap: 10 }, networkPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: '#E0F5EC', borderRadius: BorderRadius.full }, liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#1E9A70' }, networkText: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '700', fontSize: 10 }, avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.primaryFixed }, avatarText: { color: Colors.onPrimary, fontFamily: 'Inter', fontWeight: '800', fontSize: 12 },
+  welcome: { paddingHorizontal: 20, paddingTop: 25, paddingBottom: 20 }, greeting: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 14 }, name: { color: Colors.onSurface, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 29, marginTop: 2 }, wave: { fontSize: 23 }, subtitle: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 13, marginTop: 6 }, errorBanner: { marginHorizontal: 20, backgroundColor: Colors.errorContainer, borderRadius: 14, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 8 }, errorText: { flex: 1, color: Colors.error, fontFamily: 'Inter', fontSize: 12 }, loader: { marginTop: 70 },
+  balanceCard: { marginHorizontal: 20, backgroundColor: Colors.primary, borderRadius: 24, padding: 21, overflow: 'hidden', ...Shadow.level2 }, balanceGlowOne: { position: 'absolute', width: 190, height: 190, borderRadius: 95, backgroundColor: '#08725B', opacity: 0.65, right: -74, top: -95 }, balanceGlowTwo: { position: 'absolute', width: 100, height: 100, borderRadius: 50, borderWidth: 18, borderColor: '#0A725C', opacity: 0.55, right: 42, bottom: -54 }, balanceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, balanceCaption: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 10, letterSpacing: 1.15, fontWeight: '800' }, balanceTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: 7, marginTop: 7 }, balanceValue: { color: Colors.onPrimary, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 34 }, balanceCurrency: { color: Colors.primaryFixed, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 }, walletIcon: { width: 43, height: 43, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.10)', justifyContent: 'center', alignItems: 'center' }, balanceFooter: { marginTop: 25, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.16)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, balanceFootItem: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, balanceFootText: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 12, fontWeight: '600' }, secureChip: { flexDirection: 'row', alignItems: 'center', gap: 5 }, secureText: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 10, fontWeight: '700' },
+  quickActions: { flexDirection: 'row', marginHorizontal: 20, marginTop: 16, gap: 10 }, quickAction: { flex: 1, backgroundColor: Colors.surfaceContainerLowest, borderRadius: 17, paddingVertical: 12, alignItems: 'center', gap: 7, borderWidth: 1, borderColor: Colors.outlineVariant + '40' }, quickIcon: { width: 39, height: 39, borderRadius: 13, justifyContent: 'center', alignItems: 'center' }, quickLabel: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '700', fontSize: 11, textAlign: 'center' },
+  sectionHeader: { marginTop: 30, marginBottom: 13, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }, sectionEyebrow: { color: Colors.outline, fontFamily: 'Inter', fontWeight: '800', fontSize: 10, letterSpacing: 1 }, sectionTitle: { color: Colors.onSurface, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 21, marginTop: 2 }, textAction: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 5 }, textActionLabel: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '800', fontSize: 12 },
+  goalSummary: { marginHorizontal: 20, borderRadius: 17, padding: 13, flexDirection: 'row', alignItems: 'center', backgroundColor: '#EAF6F1', borderWidth: 1, borderColor: '#C5E7D8' }, summaryRing: { width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: Colors.primaryFixed }, summaryRingValue: { color: Colors.onPrimary, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 12 }, summaryCopy: { flex: 1, marginLeft: 11 }, summaryTitle: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 }, summaryText: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 11, marginTop: 3 }, summaryArrow: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.surfaceContainerLowest, justifyContent: 'center', alignItems: 'center' }, goalRail: { paddingHorizontal: 20, paddingTop: 13, gap: 12, paddingRight: 36 }, goalCard: { width: 235, backgroundColor: Colors.surfaceContainerLowest, borderWidth: 1, borderColor: Colors.outlineVariant + '45', borderRadius: 19, padding: 15, ...Shadow.level1 }, goalCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, goalIcon: { width: 40, height: 40, borderRadius: 13, justifyContent: 'center', alignItems: 'center' }, goalStatus: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 5, borderRadius: BorderRadius.full }, goalStatusDot: { width: 5, height: 5, borderRadius: 3 }, goalStatusText: { fontFamily: 'Inter', fontWeight: '800', fontSize: 10 }, goalName: { color: Colors.onSurface, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 15, marginTop: 15 }, goalAmount: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 12, marginTop: 6 }, goalTarget: { color: Colors.outline, fontWeight: '500' }, goalProgress: { height: 7, marginTop: 15, backgroundColor: Colors.surfaceContainerHigh, borderRadius: BorderRadius.full, overflow: 'hidden' }, goalProgressFill: { height: '100%', borderRadius: BorderRadius.full }, goalHint: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 10, marginTop: 8 }, newGoalCard: { width: 176, minHeight: 170, borderRadius: 19, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderStyle: 'dashed', borderColor: Colors.primary + '80', backgroundColor: '#F0F8F5', padding: 14 }, newGoalIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#DDF2E9', justifyContent: 'center', alignItems: 'center' }, newGoalTitle: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '800', fontSize: 13, marginTop: 11 }, newGoalText: { color: Colors.onSurfaceVariant, textAlign: 'center', fontFamily: 'Inter', fontSize: 10, marginTop: 4 }, emptyGoalCard: { marginHorizontal: 20, borderRadius: 18, backgroundColor: '#F0F8F5', padding: 17, flexDirection: 'row', gap: 12, alignItems: 'center', borderWidth: 1, borderColor: '#C5E7D8' }, emptyGoalTitle: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '800', fontSize: 14 }, emptyGoalText: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 11, marginTop: 4, lineHeight: 16 },
+  rateCard: { marginHorizontal: 20, marginTop: 25, borderRadius: 17, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: Colors.surfaceContainerLowest, borderWidth: 1, borderColor: Colors.outlineVariant + '45' }, rateIcon: { width: 41, height: 41, borderRadius: 13, backgroundColor: '#DDF4FF', justifyContent: 'center', alignItems: 'center' }, rateLabel: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 11 }, rateValue: { color: Colors.onSurface, fontFamily: 'Inter', fontSize: 13, fontWeight: '800', marginTop: 3 }, rateMeta: { alignItems: 'flex-end', gap: 3 }, rateMetaText: { color: Colors.outline, fontFamily: 'Inter', fontSize: 10 },
+  activityCard: { marginHorizontal: 20, backgroundColor: Colors.surfaceContainerLowest, borderRadius: 19, paddingHorizontal: 15, borderWidth: 1, borderColor: Colors.outlineVariant + '45' }, activityRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, gap: 10 }, activityIcon: { width: 40, height: 40, borderRadius: 13, justifyContent: 'center', alignItems: 'center' }, activityInfo: { flex: 1, minWidth: 0 }, activityName: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 }, activitySub: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 10, marginTop: 4 }, activityAmount: { alignItems: 'flex-end' }, activityUsdc: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 }, activityStatus: { fontFamily: 'Inter', fontSize: 10, fontWeight: '700', marginTop: 4 }, divider: { height: 1, backgroundColor: Colors.outlineVariant + '42', marginLeft: 50 }, emptyActivity: { paddingVertical: 28, alignItems: 'center', gap: 8 }, emptyActivityText: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 12 },
 });
