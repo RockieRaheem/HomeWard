@@ -26,7 +26,7 @@
 
 Sending money home is rarely just a transfer. It can be school fees, medicine, rent, land, or the next stage of a family home. Yet diaspora workers still face unclear costs, wrong-number anxiety, and little visibility after they press send.
 
-**HomeWard** is a mobile-first, purpose-led remittance experience for people supporting family in Uganda. It combines trusted recipients, transparent transfer review, goals, receipts, private accounts, and verifiable Stellar Testnet settlement proof.
+**HomeWard** is a mobile-first, purpose-led remittance experience for people supporting family in Uganda. It combines trusted recipient passports, transparent transfer review, family funding circles, goals, receipts, private accounts, and verifiable Stellar Testnet settlement proof.
 
 The intended production journey is simple:
 
@@ -42,6 +42,7 @@ The sender never needs to understand USDC, Stellar, or blockchain. Those are the
 | “What will my family actually receive?” | Up-front UGX estimate, rate, fee, purpose, and receipt. |
 | “Can I prove where the money went?” | Transaction history, shareable receipt, SMS notification, and Stellar Testnet proof. |
 | “I support more than one person or project.” | Goals for school fees, land, construction, business, and family support. |
+| “How do I keep regular family support organised?” | HomeWard Circles group a recipient or goal, planned amount, contribution history, and latest receipt. |
 | “I do not understand crypto.” | Familiar mobile-first language and an AI guide that explains rather than overwhelms. |
 
 ---
@@ -53,8 +54,19 @@ The sender never needs to understand USDC, Stellar, or blockchain. Those are the
 - Private account sessions and owner-scoped wallets, goals, chats, recipients, and history.
 - A separate Stellar Testnet wallet and USDC trustline for each signed-in demo user.
 - Trusted recipients with name, Uganda phone, MTN/Airtel network, relationship, update, and removal controls.
+- **Recipient Passport**: initials, known-since date, completed-payment count, usual transfer amount, monthly plan, latest successful payment, and a visible network-change warning.
 - A Safe-to-send review showing recipient, amount, expected UGX, fee, rate, purpose, and delivery estimate before money moves.
 - Detailed receipts, export/share actions, transaction history, and in-app updates.
+
+### Family coordination with HomeWard Circles
+
+Circles turn recurring support into an organised family plan without allowing automatic payments.
+
+- Create a circle such as *Mum’s monthly support*, *Brian’s school fees*, or *Wakiso house project*.
+- Link it to a trusted recipient, a home goal, or both.
+- Save the intended recurring USDC amount and purpose.
+- See completed-payment count, UGX delivered, the latest receipt, and a shareable summary.
+- Pause or resume the plan at any time. Every transfer still requires a deliberate Safe-to-send confirmation.
 
 ### Real blockchain proof
 
@@ -77,6 +89,16 @@ HomeWard’s AI can explain balances, rates, goals, and recent activity in plain
 - Similar goal creation is paused for confirmation instead of silently duplicating plans.
 - AI-assisted payments are limited to exact trusted-recipient matches.
 - A transfer requires the user’s explicit `CONFIRM SEND` instruction and server-side validation.
+- Server-side guardrails compare a proposed payment to the recipient’s normal history and monthly plan, flag network changes, and require `CONFIRM HIGHER AMOUNT` plus `CONFIRM SEND` before an unusual payment can proceed.
+
+### Built for real-world access
+
+- Lightweight React Native Web interface designed for a mobile browser.
+- SMS transfer-status receipts through Africa’s Talking Sandbox.
+- Downloadable and shareable receipt cards; Circle summaries can also be shared with family.
+- Assisted recipient setup is deliberately sender-controlled: someone may help enter details, but the signed-in sender must review and save the Recipient Passport before it is used.
+
+USSD, WhatsApp, and a live agent portal are future partner integrations, not capabilities we claim to operate today.
 
 ---
 
@@ -84,10 +106,12 @@ HomeWard’s AI can explain balances, rates, goals, and recent activity in plain
 
 1. Register with a name, Uganda phone number, and PIN.
 2. HomeWard provisions an individual Stellar Testnet wallet and Test USDC balance.
-3. Add a trusted recipient with their full name, MTN/Airtel number, and relationship.
-4. Enter a transfer amount and purpose, then review the expected UGX amount and fee.
-5. Confirm the transfer. HomeWard submits a real Stellar Testnet USDC transaction.
-6. Open the Stellar explorer proof and view the updated history and goal progress.
+3. Add a trusted recipient with their full name, MTN/Airtel number, relationship, and optional monthly support plan.
+4. Open their Recipient Passport to inspect their history and verify any changed details.
+5. Optionally create a Circle for their regular support or a home goal.
+6. Enter a transfer amount and purpose, then review the expected UGX amount and fee.
+7. Confirm the transfer. HomeWard submits a real Stellar Testnet USDC transaction.
+8. Open the Stellar explorer proof and view the updated history, Circle, goal progress, and receipt.
 
 ---
 
@@ -97,7 +121,7 @@ Honesty is part of the product. The table below separates the working prototype 
 
 | Capability | Current state |
 | --- | --- |
-| Individual app accounts, private data, trusted recipients, goals, receipts, AI safety controls | Implemented in the prototype |
+| Individual app accounts, private data, Recipient Passports, Circles, goals, receipts, and AI safety controls | Implemented in the prototype |
 | Stellar wallet provisioning, USDC trustline, USDC transfer, and transaction proof | **Real on Stellar Testnet** |
 | Africa’s Talking SMS | Sandbox integration; messages display only in the registered sandbox simulator |
 | Kotani Pay off-ramp | Sandbox/demo integration; not a promise of live UGX settlement |
