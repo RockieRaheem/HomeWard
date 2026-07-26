@@ -4,7 +4,7 @@
 
 <h1 align="center">HomeWard</h1>
 
-<p align="center"><strong>Send home. Know more. Worry less.</strong></p>
+<p align="center"><strong>Send home with proof it reached the right hands.</strong></p>
 
 <p align="center">
   <a href="https://homeward-staging.vercel.app/">Live demo</a> ·
@@ -40,7 +40,7 @@ The sender never needs to understand USDC, Stellar, or blockchain. Those are the
 | --- | --- |
 | “Did I send to the correct person?” | Private trusted-recipient list, exact phone/network review, and explicit confirmation. |
 | “What will my family actually receive?” | Up-front UGX estimate, rate, fee, purpose, and receipt. |
-| “Can I prove where the money went?” | Transaction history, shareable receipt, SMS notification, and Stellar Testnet proof. |
+| “Can I prove where the money went?” | Transaction history, shareable receipt, SMS notification, Stellar Testnet proof, and recipient receipt confirmation. |
 | “I support more than one person or project.” | Goals for school fees, land, construction, business, and family support. |
 | “I do not understand crypto.” | Familiar mobile-first language and an AI guide that explains rather than overwhelms. |
 
@@ -55,6 +55,7 @@ The sender never needs to understand USDC, Stellar, or blockchain. Those are the
 - Trusted recipients with name, Uganda phone, MTN/Airtel network, relationship, update, and removal controls.
 - A Safe-to-send review showing recipient, amount, expected UGX, fee, rate, purpose, and delivery estimate before money moves.
 - Detailed receipts, export/share actions, transaction history, and in-app updates.
+- Recipient receipt confirmation: a six-digit SMS code lets the sender verify that the intended family member received the payment.
 
 ### Real blockchain proof
 
@@ -87,8 +88,9 @@ HomeWard’s AI can explain balances, rates, goals, and recent activity in plain
 3. Add a trusted recipient with their full name, MTN/Airtel number, and relationship.
 4. Enter a transfer amount and purpose, then review the expected UGX amount and fee.
 5. Confirm the transfer. HomeWard submits a real Stellar Testnet USDC transaction.
-6. Open the receipt and Stellar explorer proof.
-7. View the updated history, goal progress, and Africa’s Talking sandbox SMS result where configured.
+6. The recipient receives an SMS receipt with a six-digit confirmation code.
+7. Enter that code on the HomeWard receipt to confirm the intended person received it.
+8. Open the Stellar explorer proof and view the updated history and goal progress.
 
 ---
 

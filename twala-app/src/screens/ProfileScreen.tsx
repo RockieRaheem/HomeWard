@@ -78,7 +78,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
         <View style={styles.brand}>
           <Image source={HOMEWARD_LOGO} style={styles.logoCircle} accessibilityLabel="HomeWard logo" />
           <Text style={styles.brandName}>HomeWard</Text>
-          <Text style={styles.tagline}>Send money to Uganda — fast & secure</Text>
+          <Text style={styles.tagline}>Send home with proof it reached the right hands.</Text>
         </View>
 
         <View style={styles.card}>
