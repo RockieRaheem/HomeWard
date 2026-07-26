@@ -6,6 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Wallet
 CREATE TABLE wallets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
   public_key TEXT NOT NULL,
   secret_key TEXT NOT NULL,
   is_funded BOOLEAN DEFAULT false,
@@ -18,6 +19,7 @@ CREATE TABLE wallets (
 -- Goals with milestones as JSONB
 CREATE TABLE goals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
   target_amount_ugx NUMERIC(20,0) NOT NULL,
@@ -33,6 +35,7 @@ CREATE TABLE goals (
 -- Transactions with optional goal link
 CREATE TABLE transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
   type TEXT NOT NULL CHECK (type IN ('sent', 'received')),
   amount_usdc NUMERIC(20,7) NOT NULL,
   amount_ugx NUMERIC(20,0),
@@ -54,6 +57,7 @@ CREATE TABLE transactions (
 -- Chat sessions (conversations)
 CREATE TABLE chat_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
   title TEXT NOT NULL DEFAULT 'New Chat',
   created_at TIMESTAMPTZ DEFAULT now(),
   last_message_at TIMESTAMPTZ DEFAULT now()
@@ -86,6 +90,10 @@ CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at ASC);
 CREATE INDEX idx_chat_messages_session_id ON chat_messages(session_id);
 CREATE INDEX idx_chat_sessions_last_message_at ON chat_sessions(last_message_at DESC);
 CREATE INDEX idx_goals_status ON goals(status);
+CREATE INDEX idx_wallets_user_id ON wallets(user_id);
+CREATE INDEX idx_goals_user_id ON goals(user_id);
+CREATE INDEX idx_transactions_user_id ON transactions(user_id, created_at DESC);
+CREATE INDEX idx_chat_sessions_user_id ON chat_sessions(user_id, last_message_at DESC);
 
 -- Migration for existing databases (run if columns don't exist):
 -- ALTER TABLE wallets ADD COLUMN IF NOT EXISTS balance_usdc NUMERIC(20,7) DEFAULT 0;
