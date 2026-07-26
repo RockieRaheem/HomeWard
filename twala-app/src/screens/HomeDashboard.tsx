@@ -48,7 +48,7 @@ const goalAccents = [
   { wash: '#FFF0D9', accent: Colors.secondary, icon: Colors.secondary },
 ];
 
-export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { onNavigate: (route: AppScreen) => void; onNavigateGoal?: (id: string) => void; user?: { id: string; name: string; phone: string } }) {
+export default function HomeDashboard({ onNavigate, onNavigateGoal, onSignOut, user }: { onNavigate: (route: AppScreen) => void; onNavigateGoal?: (id: string) => void; onSignOut?: () => void; user?: { id: string; name: string; phone: string } }) {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,8 +128,8 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
           </View>
           <View style={styles.topActions}>
             <View style={styles.networkPill}><View style={styles.liveDot} /><Text style={styles.networkText}>Testnet</Text></View>
-            <TouchableOpacity style={styles.notificationButton} onPress={showNotifications} accessibilityLabel="Open notifications"><MaterialCommunityIcons name="bell-outline" size={20} color={Colors.primary} />{unreadCount ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View> : null}</TouchableOpacity>
-            <View style={styles.avatar}><Text style={styles.avatarText}>{initials(user?.name)}</Text></View>
+            <TouchableOpacity style={styles.notificationButton} onPress={() => { const latest = notifications.find((notification) => !notification.readAt); if (latest) openNotification(latest); else showNotifications(); }} accessibilityLabel="Open latest notification"><MaterialCommunityIcons name="bell-outline" size={20} color={Colors.primary} />{unreadCount ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text></View> : null}</TouchableOpacity>
+            <TouchableOpacity style={styles.avatar} onPress={() => Alert.alert('Account', user?.name || 'HomeWard user', [{ text: 'Sign out', style: 'destructive', onPress: onSignOut }, { text: 'Cancel', style: 'cancel' }])} accessibilityLabel="Account options"><Text style={styles.avatarText}>{initials(user?.name)}</Text></TouchableOpacity>
           </View>
         </View>
 

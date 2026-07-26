@@ -67,10 +67,18 @@ export default function AppNavigator() {
     }
   };
 
+  const signOut = () => {
+    setApiAccessToken(null);
+    setGoalId(null);
+    setNavHistory([]);
+    setCurrentScreen('Dashboard');
+    setUser(null);
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'Dashboard':
-        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} user={user} />;
+        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} user={user} />;
       case 'Goals':
         return <Goals onNavigateGoal={navigateToGoal} />;
       case 'Assistant':
@@ -82,7 +90,7 @@ export default function AppNavigator() {
       case 'History':
         return <History />;
       default:
-        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} user={user} />;
+        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} user={user} />;
     }
   };
 
