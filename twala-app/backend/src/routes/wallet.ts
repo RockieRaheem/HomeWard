@@ -6,6 +6,34 @@ import config from '../config.js';
 
 const router = Router();
 
+async function provisionTestnetWallet() {
+  let wallet = await db.getWallet();
+  if (!wallet) {
+    wallet = await stellar.createWallet();
+    await db.saveWallet(wallet);
+  }
+  await stellar.ensureTrustline(wallet.secretKey);
+  let balance = await stellar.getBalance(wallet.publicKey);
+  if (config.stellar.network === 'TESTNET' && balance.usdc <= 0) {
+    await stellar.mintTestUsdc(wallet.secretKey, config.testUsdc.initialMintAmount);
+    balance = await stellar.getBalance(wallet.publicKey);
+  }
+  await db.updateWalletBalance(wallet.publicKey, balance.usdc, balance.xlm);
+  return { wallet, balance };
+}
+
+// Ensures each signed-in demo account has its own funded Stellar Testnet wallet.
+// Safe to call repeatedly: it only mints when the Testnet USDC balance is zero.
+router.post('/provision', async (_req, res) => {
+  try {
+    const { wallet, balance } = await provisionTestnetWallet();
+    res.json({ success: true, data: { publicKey: wallet.publicKey, balanceUsdc: balance.usdc, balanceXlm: balance.xlm, isFunded: wallet.isFunded } });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ success: false, message: `Wallet provisioning failed: ${msg}` });
+  }
+});
+
 router.post('/create', async (_req, res) => {
   try {
     const wallet = await stellar.createWallet();

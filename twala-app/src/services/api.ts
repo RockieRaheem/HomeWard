@@ -221,6 +221,8 @@ export const walletApi = {
     request<{ publicKey: string; balanceUsdc: number; balanceXlm: number; isFunded: boolean }>('/wallet/info'),
   create: () =>
     request<{ publicKey: string; balanceUsdc: number; balanceXlm: number; isFunded: boolean }>('/wallet/create', { method: 'POST' }),
+  provision: () =>
+    request<{ publicKey: string; balanceUsdc: number; balanceXlm: number; isFunded: boolean }>('/wallet/provision', { method: 'POST' }, 30000),
   balance: () =>
     request<{ balanceUsdc: number; balanceXlm: number; publicKey: string | null; isFunded: boolean }>('/wallet/balance'),
 };

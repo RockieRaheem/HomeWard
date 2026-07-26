@@ -27,10 +27,7 @@ export default function AppNavigator() {
   useEffect(() => { setApiAccessToken(user?.accessToken || null); }, [user]);
   useEffect(() => {
     if (!user?.accessToken) return;
-    walletApi.info().then((result) => {
-      if (result.success && !result.data) return walletApi.create();
-      return null;
-    }).catch(() => null);
+    walletApi.provision().catch(() => null);
   }, [user]);
   if (!user) {
     return (
