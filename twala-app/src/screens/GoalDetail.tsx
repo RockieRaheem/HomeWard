@@ -3,6 +3,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState, useEffect, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { goalsApi, historyApi, setPendingGoalId, type GoalData, type TransactionItem } from '../services/api';
+import TransactionReceipt from '../components/TransactionReceipt';
+import { downloadTransactions, shareOnWhatsApp } from '../utils/transactionActions';
 
 const TABS = ['Overview', 'Milestones', 'Transactions'];
 
@@ -59,6 +61,8 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [txLoading, setTxLoading] = useState(false);
+  const [txStatusFilter, setTxStatusFilter] = useState<'all' | 'completed' | 'pending' | 'failed'>('all');
+  const [selectedTx, setSelectedTx] = useState<TransactionItem | null>(null);
 
   const fetchGoal = useCallback(() => {
     if (!goalId) { setLoading(false); return; }
@@ -100,6 +104,7 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
   };
 
   const pct = goal && goal.targetAmountUgx > 0 ? Math.round((goal.savedAmountUgx / goal.targetAmountUgx) * 100) : 0;
+  const visibleTransactions = transactions.filter((tx) => txStatusFilter === 'all' || tx.status === txStatusFilter);
 
   if (loading) {
     return (
@@ -300,7 +305,8 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
 
         {activeTab === 'Transactions' && (
           <View style={styles.tabContent}>
-            <Text style={styles.sectionTitle}>Transaction History</Text>
+            <View style={styles.paymentsHeader}><Text style={styles.sectionTitle}>Goal payments ({visibleTransactions.length})</Text><View style={styles.paymentActions}><TouchableOpacity style={styles.paymentAction} onPress={() => shareOnWhatsApp(['HOMEWARD GOAL PAYMENT LIST', goal.title, '', ...visibleTransactions.map((tx) => `$${tx.amountUsdc.toFixed(2)} • ${tx.recipientName} • ${tx.status}`)].join('\n'))}><MaterialCommunityIcons name="whatsapp" size={17} color={Colors.primary} /></TouchableOpacity><TouchableOpacity style={styles.paymentAction} onPress={() => downloadTransactions(`${goal.title.replace(/\s+/g, '-').toLowerCase()}-payments.csv`, visibleTransactions)}><MaterialCommunityIcons name="download" size={17} color={Colors.primary} /></TouchableOpacity></View></View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.paymentFilterRow}>{(['all', 'completed', 'pending', 'failed'] as const).map((status) => <TouchableOpacity key={status} style={[styles.paymentFilter, txStatusFilter === status && styles.paymentFilterActive]} onPress={() => setTxStatusFilter(status)}><Text style={[styles.paymentFilterText, txStatusFilter === status && styles.paymentFilterTextActive]}>{status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1)}</Text></TouchableOpacity>)}</ScrollView>
             {transactions.length === 0 ? (
               <View style={styles.emptyTx}>
                 <MaterialCommunityIcons name="swap-horizontal-bold" size={48} color={Colors.outlineVariant} />
@@ -312,8 +318,8 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
                 </TouchableOpacity>
               </View>
             ) : (
-              transactions.map((tx) => (
-                <View key={tx.id} style={styles.txItem}>
+              visibleTransactions.map((tx) => (
+                <TouchableOpacity key={tx.id} style={styles.txItem} onPress={() => setSelectedTx(tx)} activeOpacity={0.75}>
                   <View style={[styles.txIconWrap, { backgroundColor: getTxColor(tx.status) + '1A' }]}>
                     <MaterialCommunityIcons
                       name={getTxIcon(tx.type, tx.status) as any}
@@ -338,12 +344,13 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
                       <Text style={styles.txTime}>{formatTimestamp(tx.createdAt)}</Text>
                     </View>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>
         )}
       </ScrollView>
+      <TransactionReceipt transaction={selectedTx} onClose={() => setSelectedTx(null)} />
     </View>
   );
 }
@@ -398,6 +405,14 @@ const styles = StyleSheet.create({
   progressDetailLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   progressDetailLabel: { fontSize: 10, fontFamily: 'Inter', fontWeight: '500', color: Colors.primary },
   sectionTitle: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
+  paymentsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  paymentActions: { flexDirection: 'row', gap: 6 },
+  paymentAction: { width: 34, height: 34, justifyContent: 'center', alignItems: 'center', borderRadius: 17, backgroundColor: Colors.surfaceContainerLow },
+  paymentFilterRow: { gap: 8, paddingBottom: 4 },
+  paymentFilter: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: Colors.outlineVariant, backgroundColor: Colors.surfaceContainerLowest },
+  paymentFilterActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  paymentFilterText: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant, fontWeight: '600' },
+  paymentFilterTextActive: { color: Colors.onPrimary },
   milestoneSummary: { backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.outlineVariant + '33', ...Shadow.level1 },
   milestoneMiniItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm, paddingVertical: 6 },
   milestoneMiniInfo: { flex: 1 },

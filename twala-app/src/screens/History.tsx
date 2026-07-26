@@ -3,8 +3,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { historyApi, eventsApi, type TransactionItem } from '../services/api';
+import TransactionReceipt from '../components/TransactionReceipt';
+import { downloadTransactions, shareOnWhatsApp } from '../utils/transactionActions';
 
 const FILTERS = ['All', 'Sent', 'Received'];
+const STATUS_FILTERS = ['All', 'Completed', 'Pending', 'Failed'];
+const DATE_FILTERS = ['All time', 'Today', '7 days', '30 days'];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   completed: { label: 'Completed', color: Colors.primary, bg: Colors.primaryFixed + '99' },
@@ -39,6 +43,9 @@ export default function History() {
   const [stats, setStats] = useState({ totalSent: 0, totalReceived: 0, thisMonth: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all time');
+  const [selectedTx, setSelectedTx] = useState<TransactionItem | null>(null);
 
   const fetchHistory = useCallback((f: string, isRefresh = false) => {
     if (!isRefresh) setLoading(true);
@@ -74,13 +81,25 @@ export default function History() {
     fetchHistory(filter, true);
   }, [filter, fetchHistory]);
 
+  const visibleTransactions = txs.filter((tx) => {
+    if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
+    const age = Date.now() - new Date(tx.createdAt).getTime();
+    if (dateFilter === 'today') return age < 86400000;
+    if (dateFilter === '7 days') return age < 7 * 86400000;
+    if (dateFilter === '30 days') return age < 30 * 86400000;
+    return true;
+  });
+
+  const shareList = () => shareOnWhatsApp([
+    'HOMEWARD TRANSACTION LIST', '',
+    ...visibleTransactions.map((tx) => `${tx.type === 'sent' ? 'Sent' : 'Received'} $${tx.amountUsdc.toFixed(2)} • ${tx.recipientName} • ${tx.status}`),
+  ].join('\n'));
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>History</Text>
-        <TouchableOpacity style={styles.searchButton}>
-          <MaterialCommunityIcons name="magnify" size={24} color={Colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}><TouchableOpacity style={styles.searchButton} onPress={shareList}><MaterialCommunityIcons name="whatsapp" size={20} color={Colors.primary} /></TouchableOpacity><TouchableOpacity style={styles.searchButton} onPress={() => downloadTransactions('homeward-transactions.csv', visibleTransactions)}><MaterialCommunityIcons name="download" size={20} color={Colors.primary} /></TouchableOpacity></View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}
@@ -96,6 +115,15 @@ export default function History() {
           })}
         </ScrollView>
 
+        <Text style={styles.filterLabel}>Status</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
+          {STATUS_FILTERS.map((f) => { const val = f.toLowerCase(); return <TouchableOpacity key={f} style={[styles.filterChip, statusFilter === val && styles.filterChipActive]} onPress={() => setStatusFilter(val)}><Text style={[styles.filterText, statusFilter === val && styles.filterTextActive]}>{f}</Text></TouchableOpacity>; })}
+        </ScrollView>
+        <Text style={styles.filterLabel}>Period</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
+          {DATE_FILTERS.map((f) => { const val = f.toLowerCase(); return <TouchableOpacity key={f} style={[styles.filterChip, dateFilter === val && styles.filterChipActive]} onPress={() => setDateFilter(val)}><Text style={[styles.filterText, dateFilter === val && styles.filterTextActive]}>{f}</Text></TouchableOpacity>; })}
+        </ScrollView>
+
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statCardLabel}>Total Sent</Text>
@@ -108,18 +136,18 @@ export default function History() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <Text style={styles.sectionTitle}>Transactions ({visibleTransactions.length})</Text>
         </View>
 
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
-        ) : txs.length === 0 ? (
+        ) : visibleTransactions.length === 0 ? (
           <Text style={{ textAlign: 'center', color: Colors.onSurfaceVariant, marginTop: 40, fontFamily: 'Inter' }}>No transactions yet</Text>
         ) : (
-          txs.map((tx, i) => {
+          visibleTransactions.map((tx, i) => {
             const cfg = STATUS_CONFIG[tx.status] || STATUS_CONFIG.completed;
             return (
-              <TouchableOpacity key={tx.id} style={styles.txCard} activeOpacity={0.7}>
+              <TouchableOpacity key={tx.id} style={styles.txCard} activeOpacity={0.7} onPress={() => setSelectedTx(tx)}>
                 <View style={styles.txLeft}>
                   <View style={[styles.txAvatar, { backgroundColor: tx.type === 'received' ? Colors.tertiaryFixed : Colors.surfaceContainer }]}>
                     <MaterialCommunityIcons name={getAvatarIcon(tx.recipientName) as any} size={20} color={tx.type === 'received' ? Colors.tertiary : Colors.primary} />
@@ -154,6 +182,7 @@ export default function History() {
           })
         )}
       </ScrollView>
+      <TransactionReceipt transaction={selectedTx} onClose={() => setSelectedTx(null)} />
     </View>
   );
 }
@@ -166,10 +195,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, ...Shadow.level1,
   },
   headerTitle: { fontSize: Typography.headlineMd.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
-  searchButton: { padding: 8, borderRadius: BorderRadius.full },
+  headerActions: { flexDirection: 'row', gap: 4 },
+  searchButton: { padding: 8, borderRadius: BorderRadius.full, backgroundColor: Colors.surfaceContainerLow },
   scrollContent: { paddingBottom: 100 },
   filterRow: { paddingVertical: Spacing.stackSm, paddingLeft: Spacing.containerPaddingMobile },
   filterContent: { flexDirection: 'row', gap: 8, paddingRight: Spacing.containerPaddingMobile },
+  filterLabel: { paddingHorizontal: Spacing.containerPaddingMobile, marginTop: 4, fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onSurfaceVariant, textTransform: 'uppercase', letterSpacing: 0.6 },
   filterChip: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: BorderRadius.full, backgroundColor: Colors.surfaceContainerLow, borderWidth: 1, borderColor: Colors.outlineVariant + '66' },
   filterChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   filterText: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant },
