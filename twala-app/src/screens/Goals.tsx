@@ -141,47 +141,18 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <MaterialCommunityIcons name="flag-checkered" size={28} color={Colors.primary} />
-            <Text style={styles.headerTitle}>Savings Goals</Text>
+            <View style={{ flex: 1 }}><Text style={styles.eyebrow}>HOME PROJECTS</Text><Text style={styles.headerTitle}>Your goals</Text><Text style={styles.headerSub}>Turn every transfer into visible progress.</Text></View>
+            <TouchableOpacity style={styles.headerAdd} onPress={() => { resetForm(); setShowCreate(true); }}><MaterialCommunityIcons name="plus" size={23} color={Colors.primary} /></TouchableOpacity>
           </View>
           <Text style={styles.headerSub}>{goals.length} goal{goals.length !== 1 ? 's' : ''} · {overallPct}% funded</Text>
         </View>
 
-        {/* Summary Card */}
-        {goals.length > 0 && (
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{formatUgx(totalSaved)}</Text>
-                <Text style={styles.summaryLabel}>Total Saved</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{formatUgx(totalTarget)}</Text>
-                <Text style={styles.summaryLabel}>Total Target</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryValue}>{formatUgx(totalTarget - totalSaved)}</Text>
-                <Text style={styles.summaryLabel}>Remaining</Text>
-              </View>
-            </View>
-            <View style={styles.summaryBarBg}>
-              <View style={[styles.summaryBarFill, { width: `${overallPct}%` }]} />
-            </View>
-          </View>
-        )}
-
-        {/* Goal List */}
+        <View style={styles.listHeading}><Text style={styles.listHeadingTitle}>{goals.length ? 'All goals' : 'Start a goal'}</Text>{goals.length ? <Text style={styles.listHeadingMeta}>{goals.length} project{goals.length === 1 ? '' : 's'}</Text> : null}</View>
         {goals.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="flag-outline" size={64} color={Colors.outlineVariant} />
-            <Text style={styles.emptyTitle}>No goals yet</Text>
-            <Text style={styles.emptyDesc}>Create your first savings goal to get started</Text>
-          </View>
+          <TouchableOpacity style={styles.emptyState} onPress={() => { resetForm(); setShowCreate(true); }}><View style={styles.emptyIcon}><MaterialCommunityIcons name="flag-outline" size={30} color={Colors.primary} /></View><Text style={styles.emptyTitle}>Build something meaningful</Text><Text style={styles.emptyDesc}>Set a goal for a family project, school fees, land, or a brighter home.</Text><View style={styles.emptyCta}><Text style={styles.emptyCtaText}>Create a goal</Text><MaterialCommunityIcons name="arrow-right" size={17} color={Colors.onPrimary} /></View></TouchableOpacity>
         ) : (
           goals.map((goal) => {
-            const pct = goal.targetAmountUgx > 0 ? Math.round((goal.savedAmountUgx / goal.targetAmountUgx) * 100) : 0;
+            const pct = goal.targetAmountUgx > 0 ? Math.min(100, Math.round((goal.savedAmountUgx / goal.targetAmountUgx) * 100)) : 0;
             const remaining = Math.max(0, goal.targetAmountUgx - goal.savedAmountUgx);
             const icon = getGoalIcon(goal.category);
 
@@ -193,8 +164,8 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
                 onPress={() => onNavigateGoal?.(goal.id)}
               >
                 <View style={styles.goalHeader}>
-                  <View style={[styles.goalIcon, { backgroundColor: goal.status === 'completed' ? Colors.primaryFixed : Colors.surfaceContainerHigh }]}>
-                    <MaterialCommunityIcons name={icon as any} size={24} color={goal.status === 'completed' ? Colors.primary : Colors.primary} />
+                  <View style={[styles.goalIcon, { backgroundColor: goal.status === 'completed' ? '#DDF2E9' : '#EAF4F0' }]}>
+                    <MaterialCommunityIcons name={icon as any} size={22} color={Colors.primary} />
                   </View>
                   <View style={styles.goalHeaderInfo}>
                     <Text style={styles.goalTitle}>{goal.title}</Text>
@@ -213,8 +184,8 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
                 </View>
 
                 <View style={styles.goalProgressRow}>
-                  <Text style={styles.goalSaved}>{formatUgx(goal.savedAmountUgx)} UGX</Text>
-                  <Text style={styles.goalTarget}>of {formatUgx(goal.targetAmountUgx)}</Text>
+                  <Text style={styles.goalSaved}>UGX {formatUgx(goal.savedAmountUgx)}</Text>
+                  <Text style={styles.goalTarget}>Target UGX {formatUgx(goal.targetAmountUgx)}</Text>
                 </View>
 
                 <View style={styles.goalBarBg}>
@@ -328,38 +299,48 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { paddingBottom: 120 },
-  header: { paddingHorizontal: Spacing.containerPaddingMobile, paddingTop: Spacing.gutter, paddingBottom: Spacing.stackMd },
-  headerTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm },
-  headerTitle: { fontSize: Typography.displayLgMobile.fontSize, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.primary },
-  headerSub: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 4 },
+  header: { marginHorizontal: 16, marginTop: 16, padding: 20, backgroundColor: Colors.primary, borderRadius: 24, overflow: 'hidden', ...Shadow.level2 },
+  headerTop: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.stackSm },
+  eyebrow: { color: Colors.primaryFixed, fontSize: 10, fontFamily: 'Inter', fontWeight: '800', letterSpacing: 1.1 },
+  headerAdd: { width: 43, height: 43, borderRadius: 14, backgroundColor: Colors.primaryFixed, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 29, fontFamily: 'Montserrat', fontWeight: '800', color: Colors.onPrimary, marginTop: 3 },
+  headerSub: { fontSize: 12, fontFamily: 'Inter', color: Colors.primaryFixed, marginTop: 4 },
+  headerEmpty: { marginTop: 17, paddingTop: 13, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.18)', flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerEmptyText: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 12, flex: 1 },
   summaryCard: { marginHorizontal: Spacing.containerPaddingMobile, backgroundColor: Colors.primary, borderRadius: BorderRadius.xl, padding: Spacing.stackMd, ...Shadow.level2, marginBottom: Spacing.gutter },
-  summaryRow: { flexDirection: 'row', alignItems: 'center' },
+  summaryRow: { flexDirection: 'row', alignItems: 'center', marginTop: 18 },
   summaryItem: { flex: 1, alignItems: 'center' },
   summaryDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.2)' },
-  summaryValue: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.onPrimary },
-  summaryLabel: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, opacity: 0.7, marginTop: 2 },
-  summaryBarBg: { height: 6, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 3, marginTop: Spacing.stackMd, overflow: 'hidden' },
-  summaryBarFill: { height: '100%', backgroundColor: Colors.secondaryContainer, borderRadius: 3 },
-  emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.onSurfaceVariant, marginTop: Spacing.stackMd },
-  emptyDesc: { fontSize: Typography.bodyMd.fontSize, fontFamily: 'Inter', color: Colors.outline, marginTop: 4 },
-  goalCard: { marginHorizontal: Spacing.containerPaddingMobile, backgroundColor: Colors.surface, borderRadius: BorderRadius.xl, padding: Spacing.stackMd, ...Shadow.level1, marginBottom: Spacing.stackMd, borderWidth: 1, borderColor: Colors.outlineVariant + '33' },
-  goalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.stackSm },
-  goalIcon: { width: 44, height: 44, borderRadius: BorderRadius.lg, justifyContent: 'center', alignItems: 'center' },
+  summaryValue: { fontSize: 18, fontFamily: 'Montserrat', fontWeight: '800', color: Colors.onPrimary },
+  summaryLabel: { fontSize: 10, fontFamily: 'Inter', color: Colors.primaryFixed, marginTop: 3 },
+  summaryBarBg: { height: 7, backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 4, marginTop: 17, overflow: 'hidden' },
+  summaryBarFill: { height: '100%', backgroundColor: Colors.secondaryContainer, borderRadius: 4 },
+  listHeading: { marginTop: 26, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  listHeadingTitle: { color: Colors.onSurface, fontFamily: 'Montserrat', fontSize: 20, fontWeight: '800' },
+  listHeadingMeta: { color: Colors.outline, fontFamily: 'Inter', fontSize: 11 },
+  emptyState: { marginHorizontal: 20, alignItems: 'center', paddingVertical: 35, paddingHorizontal: 25, backgroundColor: '#F0F8F5', borderRadius: 20, borderWidth: 1, borderColor: '#C5E7D8' },
+  emptyIcon: { width: 58, height: 58, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: '#DDF2E9' },
+  emptyTitle: { fontSize: 18, fontFamily: 'Montserrat', fontWeight: '800', color: Colors.primary, marginTop: 14 },
+  emptyDesc: { fontSize: 12, lineHeight: 18, textAlign: 'center', fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 6 },
+  emptyCta: { marginTop: 18, paddingHorizontal: 15, paddingVertical: 10, borderRadius: BorderRadius.full, backgroundColor: Colors.primary, flexDirection: 'row', gap: 6, alignItems: 'center' },
+  emptyCtaText: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 12, fontWeight: '800' },
+  goalCard: { marginHorizontal: 20, backgroundColor: Colors.surfaceContainerLowest, borderRadius: 19, padding: 15, ...Shadow.level1, marginBottom: 12, borderWidth: 1, borderColor: Colors.outlineVariant + '4A' },
+  goalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  goalIcon: { width: 43, height: 43, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   goalHeaderInfo: { flex: 1, marginLeft: Spacing.stackSm },
-  goalTitle: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurface },
-  goalStatus: { fontSize: 11, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 1 },
+  goalTitle: { fontSize: 14, fontFamily: 'Inter', fontWeight: '800', color: Colors.onSurface },
+  goalStatus: { fontSize: 11, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 3 },
   goalActions: { flexDirection: 'row', gap: 4 },
-  actionBtn: { padding: 6, borderRadius: BorderRadius.md, backgroundColor: Colors.surfaceContainerLow },
-  goalProgressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  goalSaved: { fontSize: Typography.bodyMd.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.primary },
-  goalTarget: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.outline },
-  goalBarBg: { height: 8, backgroundColor: Colors.surfaceContainerHigh, borderRadius: 4, overflow: 'hidden' },
+  actionBtn: { padding: 7, borderRadius: 10, backgroundColor: Colors.surfaceContainerLow },
+  goalProgressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  goalSaved: { fontSize: 13, fontFamily: 'Inter', fontWeight: '800', color: Colors.primary },
+  goalTarget: { fontSize: 11, fontFamily: 'Inter', color: Colors.outline },
+  goalBarBg: { height: 7, backgroundColor: Colors.surfaceContainerHigh, borderRadius: 4, overflow: 'hidden' },
   goalBarFill: { height: '100%', borderRadius: 4 },
-  goalFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  goalFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   goalRemaining: { fontSize: 11, fontFamily: 'Inter', fontWeight: '500', color: Colors.secondary },
   goalMilestones: { fontSize: 11, fontFamily: 'Inter', color: Colors.outline },
-  fab: { position: 'absolute', bottom: 24, right: Spacing.containerPaddingMobile, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', ...Shadow.level2, borderWidth: 3, borderColor: Colors.surface },
+  fab: { position: 'absolute', bottom: 24, right: 20, width: 56, height: 56, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', ...Shadow.level2, borderWidth: 3, borderColor: Colors.surface },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: Colors.surface, borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl, padding: Spacing.gutter, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.gutter },
