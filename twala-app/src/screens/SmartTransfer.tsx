@@ -281,6 +281,8 @@ export default function SmartTransfer({ user }: Props = {}) {
   const [recipientName, setRecipientName] = useState('');
   const [recipientPhone, setRecipientPhone] = useState('');
   const [recipientNetwork, setRecipientNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
+  const [recipientRelationship, setRecipientRelationship] = useState('Family');
+  const [showSafeReview, setShowSafeReview] = useState(false);
   const [liveRate, setLiveRate] = useState(3750);
   const [quote, setQuote] = useState<{ sendAmountUsdc: number; receiveAmountUgx: number; feeUsdc: number; feeUgx: number; rate: number; estimatedArrival: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -370,13 +372,14 @@ export default function SmartTransfer({ user }: Props = {}) {
     ]).start();
   }, [amount]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (approved = false) => {
     if (mode === 'send') {
       if (usdAmount < 10) return Alert.alert('Minimum 10 USDC', 'Enter at least 10 USDC to send.');
       if (!quote) return Alert.alert('No quote', 'Unable to get exchange rate. Try again.');
       if (!recipientName.trim()) return Alert.alert('Recipient Name', 'Enter the recipient name.');
       if (!recipientPhone.trim()) return Alert.alert('Recipient Phone', 'A phone number is required for Mobile Money and SMS notification.');
       if (!/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert('Invalid Phone', 'Use international format, for example +256712345678.');
+      if (!approved) { dismissKeyboard(); setShowSafeReview(true); return; }
       setSubmitting(true);
       // Safety timeout: force-stop loading if something goes wrong
       submitTimeoutRef.current = setTimeout(() => setSubmitting(false), 35000);
@@ -411,6 +414,7 @@ export default function SmartTransfer({ user }: Props = {}) {
           setAmount('500');
           setRecipientName('');
           setRecipientPhone('');
+          setRecipientRelationship('Family');
           setSelectedGoalId(null);
           setQuote(null);
         } else if ((res as any).selfSend) {
@@ -439,6 +443,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     stellarExplorerUrl: retryRes.data.stellarExplorerUrl,
                   });
                   setAmount('500'); setRecipientName(''); setRecipientPhone('');
+                  setRecipientRelationship('Family');
                   setSelectedGoalId(null); setQuote(null);
                 } else {
                   Alert.alert('Error', retryRes.message || 'Transfer failed.');
@@ -673,6 +678,14 @@ export default function SmartTransfer({ user }: Props = {}) {
                     onSubmitEditing={() => phoneRef.current?.focus()}
                   />
                   <TextInput
+                    style={styles.input}
+                    placeholder="Relationship (e.g., Mother, School, Supplier)"
+                    placeholderTextColor={Colors.outline}
+                    value={recipientRelationship}
+                    onChangeText={setRecipientRelationship}
+                    returnKeyType="next"
+                  />
+                  <TextInput
                     ref={phoneRef}
                     style={styles.input}
                     placeholder="Phone (required, e.g., +256712345678)"
@@ -787,6 +800,10 @@ export default function SmartTransfer({ user }: Props = {}) {
         />
       )}
 
+      <Modal visible={showSafeReview} transparent animationType="slide" onRequestClose={() => setShowSafeReview(false)}>
+        <View style={styles.safeOverlay}><View style={styles.safeSheet}><View style={styles.safeHandle} /><View style={styles.safeTop}><View><Text style={styles.safeEyebrow}>HOMEWARD SAFE-TO-SEND</Text><Text style={styles.safeTitle}>Review before sending</Text></View><TouchableOpacity onPress={() => setShowSafeReview(false)}><MaterialCommunityIcons name="close" size={22} color={Colors.onSurfaceVariant} /></TouchableOpacity></View><View style={styles.passportCard}><View style={styles.passportIcon}><MaterialCommunityIcons name="account-check-outline" size={24} color={Colors.primary} /></View><View style={{ flex: 1 }}><Text style={styles.passportName}>{recipientName.trim()}</Text><Text style={styles.passportMeta}>{recipientRelationship || 'Family'} · {recipientNetwork} Uganda</Text><Text style={styles.passportPhone}>{recipientPhone.trim()}</Text></View><View style={styles.passportTag}><Text style={styles.passportTagText}>CHECKED</Text></View></View><View style={styles.safeAmount}><Text style={styles.safeAmountLabel}>Recipient will receive</Text><Text style={styles.safeAmountValue}>UGX {quote?.receiveAmountUgx.toLocaleString() || '0'}</Text><Text style={styles.safeAmountSub}>You pay ${quote?.sendAmountUsdc.toFixed(2) || '0'} USDC · Fee ${quote?.feeUsdc.toFixed(2) || '0'}</Text></View><View style={styles.safeDetails}><SafeRow icon="target" label="Purpose" value={selectedPurpose.label.replace(/^.*?\s/, '')} /><SafeRow icon="flag-checkered" label="Family outcome" value={goals.find((goal) => goal.id === selectedGoalId)?.title || 'Direct family support'} /><SafeRow icon="clock-outline" label="Delivery estimate" value={quote?.estimatedArrival || 'Pending quote'} /></View><View style={styles.safeReason}><MaterialCommunityIcons name="shield-check-outline" size={19} color={Colors.primary} /><View style={{ flex: 1 }}><Text style={styles.safeReasonTitle}>Why this is safe to send</Text><Text style={styles.safeReasonText}>You checked the full name, phone number, network, amount, purpose, and fee. HomeWard will require your explicit confirmation before settlement.</Text></View></View><View style={styles.safeActions}><TouchableOpacity style={styles.safeBack} onPress={() => setShowSafeReview(false)}><Text style={styles.safeBackText}>Edit details</Text></TouchableOpacity><TouchableOpacity style={styles.safeConfirm} onPress={() => { setShowSafeReview(false); handleSubmit(true); }}><MaterialCommunityIcons name="shield-check" size={18} color={Colors.onPrimary} /><Text style={styles.safeConfirmText}>Confirm & send</Text></TouchableOpacity></View></View></View>
+      </Modal>
+
       <SendSuccess
         visible={!!successData}
         amountUsdc={successData?.amountUsdc ?? 0}
@@ -805,6 +822,10 @@ export default function SmartTransfer({ user }: Props = {}) {
       />
     </View>
   );
+}
+
+function SafeRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return <View style={styles.safeRow}><MaterialCommunityIcons name={icon as any} size={17} color={Colors.onSurfaceVariant} /><Text style={styles.safeRowLabel}>{label}</Text><Text style={styles.safeRowValue} numberOfLines={2}>{value}</Text></View>;
 }
 
 const styles = StyleSheet.create({
@@ -889,5 +910,24 @@ const styles = StyleSheet.create({
     marginTop: Spacing.gutter, ...Shadow.level2,
   },
   submitButtonDisabled: { opacity: 0.6 },
+  safeOverlay: { flex: 1, backgroundColor: 'rgba(0,32,25,0.54)', justifyContent: 'flex-end' },
+  safeSheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 28, maxHeight: '92%' },
+  safeHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.outlineVariant, marginBottom: 16 },
+  safeTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  safeEyebrow: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '800', fontSize: 10, letterSpacing: 1 },
+  safeTitle: { color: Colors.onSurface, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 21, marginTop: 3 },
+  passportCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#EAF6F1', borderRadius: 17, borderWidth: 1, borderColor: '#C5E7D8', padding: 13, marginTop: 18 },
+  passportIcon: { width: 43, height: 43, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.primaryFixed },
+  passportName: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 14 },
+  passportMeta: { color: Colors.primary, fontFamily: 'Inter', fontSize: 11, marginTop: 3 },
+  passportPhone: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 11, marginTop: 2 },
+  passportTag: { backgroundColor: Colors.primary, borderRadius: BorderRadius.full, paddingHorizontal: 7, paddingVertical: 4 },
+  passportTagText: { color: Colors.onPrimary, fontFamily: 'Inter', fontWeight: '800', fontSize: 8, letterSpacing: 0.5 },
+  safeAmount: { backgroundColor: Colors.primary, alignItems: 'center', borderRadius: 18, padding: 17, marginTop: 13 },
+  safeAmountLabel: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 11 }, safeAmountValue: { color: Colors.onPrimary, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 25, marginTop: 4 }, safeAmountSub: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 11, marginTop: 4 },
+  safeDetails: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: 17, borderWidth: 1, borderColor: Colors.outlineVariant + '44', padding: 13, marginTop: 13, gap: 12 },
+  safeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 }, safeRowLabel: { width: 100, color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 11 }, safeRowValue: { flex: 1, color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 11, textAlign: 'right' },
+  safeReason: { flexDirection: 'row', gap: 9, backgroundColor: '#F0F8F5', borderRadius: 15, padding: 12, marginTop: 13 }, safeReasonTitle: { color: Colors.primary, fontFamily: 'Inter', fontWeight: '800', fontSize: 12 }, safeReasonText: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 10, lineHeight: 15, marginTop: 3 },
+  safeActions: { flexDirection: 'row', gap: 10, marginTop: 17 }, safeBack: { flex: 1, minHeight: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surfaceContainerLow }, safeBackText: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 }, safeConfirm: { flex: 1.35, minHeight: 50, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: Colors.primary }, safeConfirmText: { color: Colors.onPrimary, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 },
   submitText: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onPrimary },
 });
