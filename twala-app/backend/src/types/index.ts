@@ -114,6 +114,7 @@ export interface AiContext {
   walletBalance: number;
   goals: Goal[];
   recentTransactions: Transaction[];
+  recipients: Recipient[];
   activeGoal?: Goal;
   userName: string;
   userPhone?: string;

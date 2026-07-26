@@ -13,4 +13,9 @@ router.post('/read-all', async (_req, res) => {
   catch (err) { res.status(500).json({ success: false, message: err instanceof Error ? err.message : String(err) }); }
 });
 
+router.post('/:id/read', async (req, res) => {
+  try { await db.markNotificationRead(req.params.id); res.json({ success: true }); }
+  catch (err) { res.status(500).json({ success: false, message: err instanceof Error ? err.message : String(err) }); }
+});
+
 export default router;

@@ -54,13 +54,10 @@ router.post('/sessions/:id/send', async (req, res) => {
   const session = await db.getChatSession(sessionId);
   if (!session) return res.status(404).json({ success: false, message: 'Session not found' });
 
-  // Save user message
-  await db.addChatMessage({ role: 'user', content: message.trim(), sessionId });
-
   // Auto-title from first user message (only if still "New Chat")
   const msgs = await db.getChatMessages(sessionId);
   const userMsgCount = msgs.filter((m) => m.role === 'user').length;
-  if (userMsgCount === 1 && session.title === 'New Chat') {
+  if (userMsgCount === 0 && session.title === 'New Chat') {
     const autoTitle = message.trim().substring(0, 60) + (message.trim().length > 60 ? '...' : '');
     await db.updateChatSessionTitle(sessionId, autoTitle);
   } else {

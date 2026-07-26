@@ -103,8 +103,19 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
   const showNotifications = async () => {
     const copy = notifications.length ? notifications.slice(0, 5).map((item) => `• ${item.title}\n${item.body}`).join('\n\n') : 'You are all caught up.';
-    Alert.alert('HomeWard updates', copy, [{ text: 'Close' }]);
-    if (unreadCount) { await notificationsApi.readAll(); setNotifications((items) => items.map((item) => ({ ...item, readAt: item.readAt || new Date().toISOString() }))); }
+    Alert.alert('HomeWard updates', copy, [
+      ...notifications.slice(0, 2).map((notification) => ({ text: notification.category === 'goal' ? 'Open goal' : 'Open receipt', onPress: () => openNotification(notification) })),
+      { text: 'Close', style: 'cancel' as const },
+    ]);
+    // Opening the bell never clears notifications; each update remains until opened.
+  };
+
+  const openNotification = async (notification: AppNotificationData) => {
+    if (!notification.readAt) {
+      const result = await notificationsApi.markRead(notification.id);
+      if (result.success) setNotifications((items) => items.map((item) => item.id === notification.id ? { ...item, readAt: new Date().toISOString() } : item));
+    }
+    onNavigate(notification.category === 'goal' ? 'Goals' : 'History');
   };
 
   return (

@@ -576,6 +576,11 @@ export async function markNotificationsRead(): Promise<void> {
   checkError(error, 'markNotificationsRead');
 }
 
+export async function markNotificationRead(id: string): Promise<void> {
+  const { error } = await db().from('notifications').update({ read_at: new Date().toISOString() }).eq('id', id).eq('user_id', requireUserId()).is('read_at', null);
+  checkError(error, 'markNotificationRead');
+}
+
 // ---------------------------------------------------------------------------
 // Saved recipients (a private address book, never a payment authorisation)
 // ---------------------------------------------------------------------------

@@ -695,7 +695,7 @@ export default function SmartTransfer({ user }: Props = {}) {
 
               {mode === 'send' && (
                 <>
-                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>Saved recipients</Text><TouchableOpacity onPress={saveRecipient}><Text style={styles.savedRecipientAction}>{selectedRecipientId ? 'Update current' : 'Save current'}</Text></TouchableOpacity></View>
+                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>Trusted recipients</Text><TouchableOpacity onPress={() => { if (selectedRecipientId) setSelectedRecipientId(null); setRecipientName(''); setRecipientPhone(''); setRecipientRelationship('Family'); requestAnimationFrame(() => nameRef.current?.focus()); }}><Text style={styles.savedRecipientAction}>+ Add recipient</Text></TouchableOpacity></View>
                   {recipients.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recipientRail}>
                     {recipients.map((recipient) => <TouchableOpacity key={recipient.id} style={[styles.savedRecipientChip, selectedRecipientId === recipient.id && styles.savedRecipientChipActive]} onPress={() => selectRecipient(recipient)}><View style={styles.savedRecipientAvatar}><Text style={styles.savedRecipientInitials}>{getInitials(recipient.fullName)}</Text></View><View><Text numberOfLines={1} style={styles.savedRecipientName}>{recipient.nickname || recipient.fullName}</Text><Text style={styles.savedRecipientMeta}>{recipient.network} · {recipient.relationship}</Text></View></TouchableOpacity>)}
                   </ScrollView> : <Text style={styles.savedRecipientEmpty}>Save someone once, then choose them quickly next time.</Text>}
@@ -730,6 +730,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     returnKeyType="done"
                     onSubmitEditing={dismissKeyboard}
                   />
+                  <TouchableOpacity style={styles.saveRecipientButton} onPress={saveRecipient}><MaterialCommunityIcons name={selectedRecipientId ? 'content-save-edit-outline' : 'account-plus-outline'} size={17} color={Colors.onPrimary} /><Text style={styles.saveRecipientButtonText}>{selectedRecipientId ? 'Update trusted recipient' : 'Save as trusted recipient'}</Text></TouchableOpacity>
                   {selectedRecipientId ? <TouchableOpacity style={styles.removeRecipientButton} onPress={removeRecipient}><MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} /><Text style={styles.removeRecipientText}>Remove saved recipient</Text></TouchableOpacity> : null}
                 </>
               )}
@@ -926,6 +927,8 @@ const styles = StyleSheet.create({
   savedRecipientName: { color: Colors.onSurface, fontFamily: 'Inter', fontSize: 12, fontWeight: '800', maxWidth: 110 },
   savedRecipientMeta: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 10, marginTop: 2 },
   savedRecipientEmpty: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 12, lineHeight: 17, marginTop: -4 },
+  saveRecipientButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, paddingVertical: 11, borderRadius: BorderRadius.xl, backgroundColor: Colors.primary },
+  saveRecipientButtonText: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 12, fontWeight: '800' },
   removeRecipientButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   removeRecipientText: { color: Colors.error, fontFamily: 'Inter', fontSize: 12, fontWeight: '700' },
   demoFlowText: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', lineHeight: 20, color: Colors.onSurfaceVariant, backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl },

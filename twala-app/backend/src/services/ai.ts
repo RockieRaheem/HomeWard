@@ -18,6 +18,7 @@ const GROQ_MODELS = [
 ];
 
 let _pendingNavigate: { screen: string; goalId?: string } | null = null;
+const pendingGoalCreations = new Map<string, { title: string; targetAmountUgx: number; category: string; description: string }>();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -42,6 +43,27 @@ function hasExplicitSendConfirmation(message: string): boolean {
   return /\bconfirm\s+send\b/i.test(message.trim());
 }
 
+function cleanAssistantOutput(value: string): string {
+  return value
+    .replace(/<think[\s\S]*?<\/think>/gi, '')
+    .replace(/<(analysis|reasoning|reflection)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<\/?[^>]+>/g, '')
+    .replace(/&lt;\/?think&gt;[\s\S]*?&lt;\/think&gt;/gi, '')
+    .trim();
+}
+
+function normaliseWords(value: string): Set<string> {
+  return new Set(value.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((word) => word.length > 2));
+}
+
+function isSimilarGoal(title: string, target: number, existing: { title: string; targetAmountUgx: number; category: string }, category: string): boolean {
+  const a = normaliseWords(title); const b = normaliseWords(existing.title);
+  const overlap = [...a].filter((word) => b.has(word)).length;
+  const similarity = overlap / Math.max(1, Math.min(a.size, b.size));
+  const closeAmount = Math.abs(target - existing.targetAmountUgx) / Math.max(target, existing.targetAmountUgx, 1) <= 0.15;
+  return similarity >= 0.6 || (similarity >= 0.35 && closeAmount && existing.category === category);
+}
+
 // ---------------------------------------------------------------------------
 // Context builder
 // ---------------------------------------------------------------------------
@@ -51,13 +73,14 @@ async function buildContext(userName: string = 'User', userPhone?: string): Prom
     const wallet = await db.getWallet();
     const goals = await db.getGoals();
     const { transactions } = await db.getTransactions({ limit: 5 });
-    let liveBalance = 0;
+    const recipients = await db.getRecipients();
+    let liveBalance = wallet?.balanceUsdc || 0;
     if (wallet?.publicKey) {
-      try { const b = await stellar.getBalance(wallet.publicKey); liveBalance = b.usdc; } catch {}
+      try { const b = await stellar.getBalance(wallet.publicKey); if (b.usdc > 0 || wallet.balanceUsdc === 0) liveBalance = b.usdc; } catch {}
     }
-    return { walletBalance: liveBalance, goals, recentTransactions: transactions, activeGoal: goals.find((g) => g.status === 'active'), userName, userPhone };
+    return { walletBalance: liveBalance, goals, recentTransactions: transactions, recipients, activeGoal: goals.find((g) => g.status === 'active'), userName, userPhone };
   } catch {
-    return { walletBalance: 0, goals: [], recentTransactions: [], activeGoal: undefined, userName, userPhone };
+    return { walletBalance: 0, goals: [], recentTransactions: [], recipients: [], activeGoal: undefined, userName, userPhone };
   }
 }
 
@@ -76,6 +99,7 @@ function buildSystemPrompt(ctx: AiContext): string {
         `- ${t.type === 'sent' ? '→' : '←'} ${usdc(t.amountUsdc)} ${t.recipientName} (${t.status})`
       ).join('\n')
     : '(none)';
+  const recipientsBrief = ctx.recipients.length > 0 ? ctx.recipients.map((recipient) => `- ${recipient.fullName} | ${recipient.phone} | ${recipient.network} | ${recipient.relationship}`).join('\n') : '(none saved)';
 
   return `You are HomeWard, an AI financial companion for cross-border payments to Uganda.
 
@@ -83,6 +107,7 @@ User: ${ctx.userName}${ctx.userPhone ? ` (${ctx.userPhone})` : ''}
 Wallet: ${usdc(ctx.walletBalance)} USDC
 Goals:\n${goalsBrief}
 Recent txs:\n${txBrief}
+Trusted recipients:\n${recipientsBrief}
 Rate: 1 USDC ≈ UGX 3,750 (0.5% fee, min $0.50)
 
 You can perform these actions via function calls — DO IT when asked:
@@ -94,6 +119,9 @@ You can perform these actions via function calls — DO IT when asked:
 - Explain in plain language first. Mention USDC, Stellar, Kotani, or Testnet only when the user asks or needs proof details.
 - Never invent beneficiary details, rates, provider availability, partner approvals, transaction status, or a result you cannot verify from the supplied context.
 - Never send money on a first request. Prepare a Safe-to-send review, ask the user to check it, and require the exact phrase **CONFIRM SEND**. Only then call send_money with confirmedByUser:true.
+- AI transfers are permitted only to a listed Trusted recipient. Use their exact saved name, phone and network; if the user names someone unsaved, direct them to add that recipient in Send Money. Never guess or alter recipient details.
+- Before create_goal, check every listed goal for a similar title, purpose, category or target. If similar, do not create it; explain the match and require the exact phrase **CONFIRM CREATE GOAL** before calling create_goal again.
+- Never reveal chain-of-thought, hidden analysis, XML/HTML tags, or tool payloads. Give only the concise user-facing answer.
 - For goal or chat deletion, explain that it is permanent and direct the user to the app's confirmation sheet; do not claim deletion before it has happened.
 - If asked what HomeWard does, say: "Pay abroad, family receives UGX, every payment has a purpose and proof."
 
@@ -249,7 +277,7 @@ const TOOLS: any[] = [
 // Tool execution (returns clean human-readable messages, no raw JSON)
 // ---------------------------------------------------------------------------
 
-async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: string): Promise<string> {
+async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: string, sessionId?: string): Promise<string> {
   const { name, arguments: rawArgs } = toolCall.function;
   let args: Record<string, any>;
   try { args = JSON.parse(rawArgs); } catch { return `❌ Invalid arguments for ${name}`; }
@@ -257,10 +285,21 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
   try {
     switch (name) {
       case 'create_goal': {
+        const title = String(args.title || '').trim();
+        const targetAmountUgx = Number(args.targetAmountUgx);
+        const category = args.category || 'other';
+        if (!title || !Number.isFinite(targetAmountUgx) || targetAmountUgx <= 0) return '❌ A goal needs a valid title and target amount.';
+        const similar = ctx.goals.find((goal) => isSimilarGoal(title, targetAmountUgx, goal, category));
+        if (similar && !/\bconfirm\s+create\s+goal\b/i.test(userMessage)) {
+          if (sessionId) pendingGoalCreations.set(sessionId, { title, targetAmountUgx, category, description: args.description || '' });
+          return `⚠️ A similar goal already exists: "${similar.title}" (${fiat(similar.savedAmountUgx)} saved of ${fiat(similar.targetAmountUgx)}). I have not created a duplicate. If you intentionally want a separate goal, reply exactly CONFIRM CREATE GOAL.`;
+        }
+        const pending = sessionId ? pendingGoalCreations.get(sessionId) : undefined;
+        if (similar && (!pending || pending.title !== title)) return '⚠️ Please review the similar goal and reply exactly CONFIRM CREATE GOAL if you truly need a separate one.';
         const goal = await db.createGoal({
-          title: args.title, description: args.description || '',
-          targetAmountUgx: args.targetAmountUgx, category: args.category || 'other',
+          title, description: args.description || '', targetAmountUgx, category,
         });
+        if (sessionId) pendingGoalCreations.delete(sessionId);
         return `✅ Created goal "${goal.title}" — target ${fiat(goal.targetAmountUgx)}.`;
       }
 
@@ -293,7 +332,10 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
         if (args.recipientPhone && ctx.userPhone && args.recipientPhone.trim() === ctx.userPhone.trim() && !args.confirmSelfSend) {
           return `⚠️ **${ctx.userName}**, that number (**${ctx.userPhone}**) is your own. Sending to yourself will use network fees for no benefit. If you're sure, call send_money again with **confirmSelfSend: true**.`;
         }
-        const network = args.recipientNetwork?.toUpperCase() === 'AIRTEL' ? 'AIRTEL' : 'MTN';
+        const trustedRecipient = ctx.recipients.find((recipient) => recipient.phone === args.recipientPhone.trim());
+        if (!trustedRecipient) return '⚠️ This recipient is not in your Trusted recipients list, so I have not prepared a transfer. Open Send Money, add and verify their full name, phone and network, then return here.';
+        if (trustedRecipient.fullName.toLowerCase() !== String(args.recipientName || '').trim().toLowerCase()) return `⚠️ The saved recipient for ${trustedRecipient.phone} is ${trustedRecipient.fullName}. I stopped the transfer because the name does not match.`;
+        const network = trustedRecipient.network;
         const wallet = await db.getWallet();
         if (!wallet) return '❌ No wallet found. Create a wallet first.';
         const balance = await stellar.getBalance(wallet.publicKey);
@@ -304,7 +346,7 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
         const rate = await getExchangeRate();
         const quote = calculateQuote(amountUsdc, rate);
         if (!args.confirmedByUser || !hasExplicitSendConfirmation(userMessage)) {
-          return `SAFE-TO-SEND REVIEW (not sent): ${args.recipientName} will receive ${fiat(quote.receiveAmountUgx)} via ${network}. You pay ${usdc(quote.sendAmountUsdc)}; fee ${usdc(quote.feeUsdc)}; rate 1 USDC = ${fiat(quote.rate)}. Purpose: ${args.purpose || 'Family support'}. Ask the user to review the recipient details and reply with the exact phrase CONFIRM SEND. Do not say the payment was sent.`;
+        return `SAFE-TO-SEND REVIEW (not sent): Trusted recipient ${trustedRecipient.fullName} (${trustedRecipient.relationship}) at ${trustedRecipient.phone} will receive ${fiat(quote.receiveAmountUgx)} via ${network}. You pay ${usdc(quote.sendAmountUsdc)}; fee ${usdc(quote.feeUsdc)}; rate 1 USDC = ${fiat(quote.rate)}. Purpose: ${args.purpose || 'Family support'}. Check the exact name, phone and amount, then reply with CONFIRM SEND. Do not say the payment was sent.`;
         }
         const referenceId = `ai-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -335,7 +377,7 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
         const isTestnetSimulation = config.stellar.network === 'TESTNET';
         await db.createTransaction({
           type: 'sent', amountUsdc: quote.sendAmountUsdc, amountUgx: quote.receiveAmountUgx,
-          rate: quote.rate, recipientName: args.recipientName, recipientPhone: args.recipientPhone || '',
+          rate: quote.rate, recipientName: trustedRecipient.fullName, recipientPhone: trustedRecipient.phone,
           recipientNetwork: network, status: isTestnetSimulation ? 'completed' : 'pending', purpose: args.purpose || 'Transfer',
           stellarTxHash, kotaniReferenceId: referenceId,
           kotaniStatus: isTestnetSimulation ? 'SIMULATED_COMPLETED' : kotaniResult.data?.status || 'pending',
@@ -345,14 +387,14 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
         if (args.recipientPhone) {
           sendTransferNotificationAsync({
             phoneNumber: args.recipientPhone,
-            recipientName: args.recipientName,
+            recipientName: trustedRecipient.fullName,
             amountUgx: quote.receiveAmountUgx,
             amountUsdc: quote.sendAmountUsdc,
             senderName: args.senderName || ctx.userName || args.recipientName,
           });
         }
 
-        return `✅ **Sent ${usdc(quote.sendAmountUsdc)} to ${args.recipientName}!** Delivery: ~${fiat(quote.receiveAmountUgx)} UGX via ${network}. Fee: ${usdc(quote.feeUsdc)}. Balance: ${usdc(newBalance.usdc)} remaining. Ref: ${referenceId.slice(-8)}`;
+        return `✅ **Sent ${usdc(quote.sendAmountUsdc)} to ${trustedRecipient.fullName}!** Delivery: ~${fiat(quote.receiveAmountUgx)} UGX via ${network}. Fee: ${usdc(quote.feeUsdc)}. Balance: ${usdc(newBalance.usdc)} remaining. Ref: ${referenceId.slice(-8)}`;
       }
 
       case 'update_goal': {
@@ -487,7 +529,7 @@ async function tryGroqModel(
   }
 
   for (const toolCall of choice.tool_calls) {
-    const result = await executeToolCall(toolCall, ctx, userMessage);
+    const result = await executeToolCall(toolCall, ctx, userMessage, history[history.length - 1]?.sessionId);
     messages.push({ role: 'assistant', content: null, tool_calls: [toolCall] });
     messages.push({ role: 'tool', tool_call_id: toolCall.id, content: result });
   }
@@ -562,6 +604,8 @@ export async function chat(userMessage: string, sessionId?: string, userName?: s
     console.warn('  AI: all providers exhausted, using fallback');
   }
 
+  reply = cleanAssistantOutput(reply);
+  if (!reply) reply = 'I’m ready to help. Please ask your question again.';
   try { await db.addChatMessage({ role: 'assistant', content: reply, sessionId }); } catch (e) { console.error('Failed to save reply:', e); }
 
   let messages: ChatMessage[] = [];

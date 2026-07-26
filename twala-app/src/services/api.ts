@@ -327,6 +327,7 @@ export const ratesApi = {
 export const notificationsApi = {
   list: () => request<AppNotificationData[]>('/notifications'),
   readAll: () => request<{ success: boolean }>('/notifications/read-all', { method: 'POST' }),
+  markRead: (id: string) => request<{ success: boolean }>(`/notifications/${id}/read`, { method: 'POST' }),
 };
 
 export const recipientsApi = {
