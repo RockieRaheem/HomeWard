@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createHash } from 'crypto';
 import * as db from '../services/database.js';
+import { createSessionToken } from '../services/session.js';
 import type { UserProfile } from '../types/index.js';
 
 const router = Router();
@@ -58,7 +59,7 @@ router.post('/register', async (req, res) => {
       pinHash: hashPin(pin),
     });
 
-    res.status(201).json({ success: true, data: sanitize(profile), message: 'Account created successfully' });
+    res.status(201).json({ success: true, data: { ...sanitize(profile), accessToken: createSessionToken(profile.id) }, message: 'Account created successfully' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ success: false, message: `Registration failed: ${msg}` });
@@ -88,7 +89,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Incorrect PIN' });
     }
 
-    res.json({ success: true, data: sanitize(profile), message: 'Login successful' });
+    res.json({ success: true, data: { ...sanitize(profile), accessToken: createSessionToken(profile.id) }, message: 'Login successful' });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ success: false, message: `Login failed: ${msg}` });

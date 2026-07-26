@@ -18,6 +18,9 @@ const LOCAL_DEV = Platform.OS === 'web'
 const BASE_URL = CONFIGURED_API_URL || LOCAL_DEV;
 
 let cachedBaseUrl = BASE_URL;
+let accessToken = '';
+
+export function setApiAccessToken(token: string | null) { accessToken = token || ''; }
 let _backendOnline = false;
 let _connectionListeners: Array<(online: boolean) => void> = [];
 
@@ -140,6 +143,7 @@ export interface UserProfile {
   name: string;
   phone: string;
   createdAt: string;
+  accessToken?: string;
 }
 
 export interface NavigateAction {
@@ -172,7 +176,7 @@ async function request<T>(path: string, options?: RequestInit, timeoutMs = 8000)
   try {
     const res = await fetch(url, {
       ...options,
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}), ...options?.headers },
       signal: controller.signal,
     });
     clearTimeout(timeout);

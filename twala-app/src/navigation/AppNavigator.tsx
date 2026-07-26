@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HomeDashboard from '../screens/HomeDashboard';
@@ -10,11 +10,13 @@ import History from '../screens/History';
 import ProfileScreen from '../screens/ProfileScreen';
 import BottomNavBar, { AppScreen } from '../components/BottomNavBar';
 import { Colors } from '../theme';
+import { setApiAccessToken } from '../services/api';
 
 interface UserProfile {
   id: string;
   name: string;
   phone: string;
+  accessToken?: string;
 }
 
 export default function AppNavigator() {
@@ -22,7 +24,7 @@ export default function AppNavigator() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('Dashboard');
   const [navHistory, setNavHistory] = useState<AppScreen[]>([]);
   const [goalId, setGoalId] = useState<string | null>(null);
-
+  useEffect(() => { setApiAccessToken(user?.accessToken || null); }, [user]);
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>

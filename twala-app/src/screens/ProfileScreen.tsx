@@ -5,7 +5,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { authApi } from '../services/api';
 
 interface Props {
-  onProfileReady: (profile: { id: string; name: string; phone: string }) => void;
+  onProfileReady: (profile: { id: string; name: string; phone: string; accessToken?: string }) => void;
 }
 
 const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
@@ -60,7 +60,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
         ? await authApi.register(trimmedName, trimmedPhone, pin)
         : await authApi.login(trimmedPhone, pin);
       if (res.success && res.data) {
-        onProfileReady({ id: res.data.id, name: res.data.name, phone: res.data.phone });
+        onProfileReady({ id: res.data.id, name: res.data.name, phone: res.data.phone, accessToken: res.data.accessToken });
       } else {
         Alert.alert('Error', res.message || 'Something went wrong. Try again.');
       }

@@ -66,6 +66,7 @@ CREATE TABLE chat_sessions (
 -- Chat messages linked to a session
 CREATE TABLE chat_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
   content TEXT NOT NULL,
   session_id UUID REFERENCES chat_sessions(id) ON DELETE CASCADE,

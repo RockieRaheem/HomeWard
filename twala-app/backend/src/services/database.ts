@@ -1,10 +1,16 @@
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type { WalletInfo, Transaction, Goal, ChatMessage, ChatSession, ExchangeRate, UserProfile } from '../types/index.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
 let _db: SupabaseClient | null = null;
+const userContext = new AsyncLocalStorage<string>();
+
+export function runForUser<T>(userId: string, work: () => T): T { return userContext.run(userId, work); }
+function currentUserId(): string | null { return userContext.getStore() || null; }
+function requireUserId(): string { const id = currentUserId(); if (!id) throw new Error('Authenticated user required'); return id; }
 
 function db(): SupabaseClient {
   if (!_db) {
@@ -30,12 +36,13 @@ function checkError(error: PostgrestError | null, context: string) {
 // ---------------------------------------------------------------------------
 
 export async function getWallet(): Promise<WalletInfo | null> {
-  const { data, error } = await db()
+  let query = db()
     .from('wallets')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+    .limit(1);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'getWallet');
@@ -51,18 +58,22 @@ export async function getWallet(): Promise<WalletInfo | null> {
 }
 
 export async function updateWalletBalance(publicKey: string, balanceUsdc: number, balanceXlm: number): Promise<void> {
-  const { error } = await db()
+  let query = db()
     .from('wallets')
     .update({ balance_usdc: balanceUsdc.toFixed(7), balance_xlm: balanceXlm.toFixed(7), updated_at: new Date().toISOString() })
     .eq('public_key', publicKey);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { error } = await query;
   checkError(error, 'updateWalletBalance');
 }
 
 export async function saveWallet(wallet: WalletInfo): Promise<void> {
-  const { error: delErr } = await db().from('wallets').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const userId = requireUserId();
+  const { error: delErr } = await db().from('wallets').delete().eq('user_id', userId);
   checkError(delErr, 'saveWallet (delete)');
 
   const { error: insErr } = await db().from('wallets').insert({
+    user_id: userId,
     public_key: wallet.publicKey,
     secret_key: wallet.secretKey,
     is_funded: wallet.isFunded,
@@ -77,21 +88,24 @@ export async function saveWallet(wallet: WalletInfo): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function getGoals(): Promise<Goal[]> {
-  const { data, error } = await db()
+  let query = db()
     .from('goals')
     .select('*')
     .order('created_at', { ascending: false });
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query;
 
   checkError(error, 'getGoals');
   return (data || []).map(goalRow);
 }
 
 export async function getGoal(id: string): Promise<Goal | null> {
-  const { data, error } = await db()
+  let query = db()
     .from('goals')
     .select('*')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'getGoal');
@@ -109,6 +123,7 @@ export async function createGoal(input: {
   const { data, error } = await db()
     .from('goals')
     .insert({
+      user_id: requireUserId(),
       title: input.title,
       description: input.description || '',
       target_amount_ugx: input.targetAmountUgx,
@@ -125,7 +140,9 @@ export async function createGoal(input: {
 }
 
 export async function deleteGoal(id: string): Promise<void> {
-  const { error } = await db().from('goals').delete().eq('id', id);
+  let query = db().from('goals').delete().eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { error } = await query;
   checkError(error, 'deleteGoal');
 }
 
@@ -139,12 +156,12 @@ export async function updateGoal(id: string, updates: Partial<Goal>): Promise<Go
   if (updates.status !== undefined) dbUpdates.status = updates.status;
   if (updates.milestones !== undefined) dbUpdates.milestones = updates.milestones;
 
-  const { data, error } = await db()
+  let query = db()
     .from('goals')
     .update(dbUpdates)
-    .eq('id', id)
-    .select()
-    .single();
+    .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.select().single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'updateGoal');
@@ -205,6 +222,7 @@ export async function getTransactions(options?: {
   let query = db()
     .from('transactions')
     .select('*', { count: 'exact' });
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
 
   if (type && type !== 'all') {
     query = query.eq('type', type);
@@ -226,12 +244,13 @@ export async function getTransactions(options?: {
 }
 
 export async function getTransactionByKotaniRef(referenceId: string): Promise<Transaction | null> {
-  const { data, error } = await db()
+  let query = db()
     .from('transactions')
     .select('*')
     .eq('kotani_reference_id', referenceId)
-    .limit(1)
-    .single();
+    .limit(1);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'getTransactionByKotaniRef');
@@ -239,11 +258,12 @@ export async function getTransactionByKotaniRef(referenceId: string): Promise<Tr
 }
 
 export async function getTransaction(id: string): Promise<Transaction | null> {
-  const { data, error } = await db()
+  let query = db()
     .from('transactions')
     .select('*')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'getTransaction');
@@ -256,6 +276,7 @@ export async function createTransaction(
   const { data, error } = await db()
     .from('transactions')
     .insert({
+      user_id: requireUserId(),
       type: input.type,
       amount_usdc: input.amountUsdc,
       amount_ugx: input.amountUgx || null,
@@ -288,12 +309,12 @@ export async function updateTransaction(
   if (updates.kotaniStatus !== undefined) dbUpdates.kotani_status = updates.kotaniStatus;
   if (updates.stellarTxHash !== undefined) dbUpdates.stellar_tx_hash = updates.stellarTxHash;
 
-  const { data, error } = await db()
+  let query = db()
     .from('transactions')
     .update(dbUpdates)
-    .eq('id', id)
-    .select()
-    .single();
+    .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.select().single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'updateTransaction');
@@ -308,24 +329,30 @@ export async function getTransactionStats(): Promise<{
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  const { data: sentData, error: sentErr } = await db()
+  let sentQuery = db()
     .from('transactions')
     .select('amount_usdc')
     .eq('type', 'sent')
     .eq('status', 'completed');
+  if (currentUserId()) sentQuery = sentQuery.eq('user_id', currentUserId());
+  const { data: sentData, error: sentErr } = await sentQuery;
   checkError(sentErr, 'getTransactionStats (sent)');
 
-  const { data: receivedData, error: recErr } = await db()
+  let receivedQuery = db()
     .from('transactions')
     .select('amount_usdc')
     .eq('type', 'received')
     .eq('status', 'completed');
+  if (currentUserId()) receivedQuery = receivedQuery.eq('user_id', currentUserId());
+  const { data: receivedData, error: recErr } = await receivedQuery;
   checkError(recErr, 'getTransactionStats (received)');
 
-  const { count, error: countErr } = await db()
+  let monthQuery = db()
     .from('transactions')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', startOfMonth);
+  if (currentUserId()) monthQuery = monthQuery.eq('user_id', currentUserId());
+  const { count, error: countErr } = await monthQuery;
   checkError(countErr, 'getTransactionStats (month)');
 
   return {
@@ -381,10 +408,11 @@ function txRow(data: any): Transaction {
 // ---------------------------------------------------------------------------
 
 export async function getChatSessions(): Promise<ChatSession[]> {
-  const { data, error } = await db()
+  let query = db()
     .from('chat_sessions')
-    .select('*')
-    .order('last_message_at', { ascending: false });
+    .select('*');
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.order('last_message_at', { ascending: false });
 
   checkError(error, 'getChatSessions');
   return (data || []).map((r: any) => ({
@@ -396,11 +424,12 @@ export async function getChatSessions(): Promise<ChatSession[]> {
 }
 
 export async function getChatSession(id: string): Promise<ChatSession | null> {
-  const { data, error } = await db()
+  let query = db()
     .from('chat_sessions')
     .select('*')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { data, error } = await query.single();
 
   if (error && error.code === 'PGRST116') return null;
   checkError(error, 'getChatSession');
@@ -416,7 +445,7 @@ export async function getChatSession(id: string): Promise<ChatSession | null> {
 export async function createChatSession(title: string): Promise<ChatSession> {
   const { data, error } = await db()
     .from('chat_sessions')
-    .insert({ title, last_message_at: new Date().toISOString() })
+    .insert({ user_id: requireUserId(), title, last_message_at: new Date().toISOString() })
     .select()
     .single();
 
@@ -431,32 +460,39 @@ export async function createChatSession(title: string): Promise<ChatSession> {
 }
 
 export async function deleteChatSession(id: string): Promise<void> {
+  if (!(await getChatSession(id))) return;
   const { error: msgErr } = await db()
     .from('chat_messages')
     .delete()
     .eq('session_id', id);
   checkError(msgErr, 'deleteChatSession (messages)');
 
-  const { error } = await db()
+  let query = db()
     .from('chat_sessions')
     .delete()
     .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { error } = await query;
   checkError(error, 'deleteChatSession');
 }
 
 export async function updateChatSessionTitle(id: string, title: string): Promise<void> {
-  const { error } = await db()
+  let query = db()
     .from('chat_sessions')
     .update({ title, last_message_at: new Date().toISOString() })
     .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { error } = await query;
   checkError(error, 'updateChatSessionTitle');
 }
 
 export async function touchChatSession(id: string): Promise<void> {
-  const { error } = await db()
+  let query = db()
     .from('chat_sessions')
     .update({ last_message_at: new Date().toISOString() })
     .eq('id', id);
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
+  const { error } = await query;
   checkError(error, 'touchChatSession');
 }
 
@@ -468,6 +504,7 @@ export async function getChatMessages(sessionId?: string): Promise<ChatMessage[]
   let query = db()
     .from('chat_messages')
     .select('*');
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
 
   if (sessionId) {
     query = query.eq('session_id', sessionId);
@@ -491,7 +528,7 @@ export async function addChatMessage(msg: {
   content: string;
   sessionId?: string;
 }): Promise<void> {
-  const insert: any = { role: msg.role, content: msg.content };
+  const insert: any = { user_id: requireUserId(), role: msg.role, content: msg.content };
   if (msg.sessionId) insert.session_id = msg.sessionId;
   const { error } = await db().from('chat_messages').insert(insert);
   checkError(error, 'addChatMessage');
@@ -499,6 +536,7 @@ export async function addChatMessage(msg: {
 
 export async function clearChatMessages(sessionId?: string): Promise<void> {
   let query = db().from('chat_messages').delete();
+  if (currentUserId()) query = query.eq('user_id', currentUserId());
   if (sessionId) {
     query = query.eq('session_id', sessionId);
   } else {
@@ -509,6 +547,7 @@ export async function clearChatMessages(sessionId?: string): Promise<void> {
 
   if (!sessionId) {
     const { error: seedErr } = await db().from('chat_messages').insert({
+      user_id: requireUserId(),
       role: 'assistant',
       content: "Hi! I'm **HomeWard**, your AI financial companion. I can help you send money to Uganda, track your savings goals, and more. What would you like to do today?",
     });

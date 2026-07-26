@@ -18,6 +18,7 @@ import * as db from './services/database.js';
 import * as kotani from './services/kotani.js';
 import { sendTransferNotification } from './services/sms.js';
 import { notifyChange, getChangeVersion } from './services/events.js';
+import { requireAuth } from './middleware/auth.js';
 
 function getLanIp(): string {
   const ifaces = os.networkInterfaces();
@@ -63,16 +64,16 @@ app.get('/api/events/version', (_req, res) => {
   res.json({ success: true, data: { version: getChangeVersion() } });
 });
 
-app.use('/api/wallet', walletRouter);
-app.use('/api/transfer', transferRouter);
-app.use('/api/goals', goalsRouter);
-app.use('/api/history', historyRouter);
-app.use('/api/chat', chatRouter);
+app.use('/api/wallet', requireAuth, walletRouter);
+app.use('/api/transfer', requireAuth, transferRouter);
+app.use('/api/goals', requireAuth, goalsRouter);
+app.use('/api/history', requireAuth, historyRouter);
+app.use('/api/chat', requireAuth, chatRouter);
 app.use('/api/rates', ratesRouter);
 app.use('/api/kotani', kotaniRouter);
 app.use('/api/auth', authRouter);
-app.use('/api/transak', transakRouter);
-app.use('/api/moneygram', moneygramRouter);
+app.use('/api/transak', requireAuth, transakRouter);
+app.use('/api/moneygram', requireAuth, moneygramRouter);
 
 // POST /api/sms/test — quick SMS test endpoint (fire-and-forget)
 app.post('/api/sms/test', express.json(), async (req, res) => {
