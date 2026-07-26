@@ -70,7 +70,7 @@ app.use('/api/goals', requireAuth, goalsRouter);
 app.use('/api/history', requireAuth, historyRouter);
 app.use('/api/chat', requireAuth, chatRouter);
 app.use('/api/rates', ratesRouter);
-app.use('/api/kotani', kotaniRouter);
+app.use('/api/kotani', requireAuth, kotaniRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/transak', requireAuth, transakRouter);
 app.use('/api/moneygram', requireAuth, moneygramRouter);
