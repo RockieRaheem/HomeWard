@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Linking, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Modal, Linking, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -63,6 +63,7 @@ export default function SendSuccess({
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
       <View style={styles.overlay}>
         <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+          <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.checkSection}>
             <Animated.View style={[styles.checkCircle, { opacity: checkOpacity }]}>
               <MaterialCommunityIcons name="check" size={48} color={Colors.onPrimary} />
@@ -157,6 +158,7 @@ export default function SendSuccess({
 
             {onConfirmReceipt ? <View style={[styles.confirmationCard, confirmationState === 'confirmed' && styles.confirmationCardDone]}><View style={styles.confirmationHeader}><MaterialCommunityIcons name={confirmationState === 'confirmed' ? 'account-check-outline' : 'shield-key-outline'} size={20} color={Colors.primary} /><View style={{ flex: 1 }}><Text style={styles.confirmationTitle}>{confirmationState === 'confirmed' ? 'Recipient receipt confirmed' : 'Confirm family receipt'}</Text><Text style={styles.confirmationText}>{confirmationState === 'confirmed' ? 'Your recipient confirmed they received this payment.' : 'Ask the recipient for the six-digit HomeWard code sent by SMS.'}</Text></View></View>{confirmationState !== 'confirmed' ? <View style={styles.confirmationInputRow}><TextInput value={confirmationCode} onChangeText={(value) => { setConfirmationCode(value.replace(/\D/g, '').slice(0, 6)); setConfirmationState('idle'); }} keyboardType="number-pad" maxLength={6} placeholder="000000" placeholderTextColor={Colors.outline} style={styles.confirmationInput} /><TouchableOpacity style={styles.confirmationButton} onPress={confirmReceipt} disabled={confirmationState === 'checking'}>{confirmationState === 'checking' ? <ActivityIndicator size="small" color={Colors.onPrimary} /> : <Text style={styles.confirmationButtonText}>Verify</Text>}</TouchableOpacity></View> : null}{confirmationState === 'error' ? <Text style={styles.confirmationError}>{confirmationMessage}</Text> : null}</View> : null}
           </Animated.View>
+          </ScrollView>
 
           <TouchableOpacity style={styles.doneButton} onPress={onDone} activeOpacity={0.8}>
             <Text style={styles.doneButtonText}>Done</Text>
@@ -175,10 +177,12 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surface, borderRadius: BorderRadius.xl * 1.5,
-    width: '100%', maxWidth: 400,
+    width: '100%', maxWidth: 400, maxHeight: '88%',
     padding: Spacing.gutter,
     ...Shadow.level2,
   },
+  scrollArea: { flexGrow: 0 },
+  scrollContent: { paddingBottom: 4 },
   checkSection: { alignItems: 'center', marginBottom: Spacing.gutter },
   checkCircle: {
     width: 80, height: 80, borderRadius: 40,
