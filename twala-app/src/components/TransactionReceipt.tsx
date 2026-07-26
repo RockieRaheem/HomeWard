@@ -2,12 +2,11 @@ import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet, Linking } 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import type { TransactionItem } from '../services/api';
-import { downloadReceipt, formatTransactionReceipt, shareOnWhatsApp } from '../utils/transactionActions';
+import { downloadReceipt, shareReceiptOnWhatsApp } from '../utils/transactionActions';
 
 export default function TransactionReceipt({ transaction, onClose }: { transaction: TransactionItem | null; onClose: () => void }) {
   if (!transaction) return null;
   const tx = transaction;
-  const receipt = formatTransactionReceipt(tx);
   const isSent = tx.type === 'sent';
   const statusColor = tx.status === 'completed' ? Colors.primary : tx.status === 'failed' ? Colors.error : Colors.secondary;
   const receiptId = `HW-${tx.id.replace(/-/g, '').slice(-8).toUpperCase()}`;
@@ -35,7 +34,7 @@ export default function TransactionReceipt({ transaction, onClose }: { transacti
               <Row icon="calendar-clock" label="Date" value={new Date(tx.createdAt).toLocaleString('en-UG', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' })} />
               {tx.stellarTxHash ? <TouchableOpacity style={styles.stellarRow} onPress={() => Linking.openURL(`https://stellar.expert/explorer/testnet/tx/${tx.stellarTxHash}`)}><MaterialCommunityIcons name="shield-check" size={18} color={Colors.onPrimary} /><View style={{ flex: 1 }}><Text style={styles.stellarTitle}>Verified on Stellar Testnet</Text><Text style={styles.stellarHash}>{tx.stellarTxHash.slice(0, 14)}...{tx.stellarTxHash.slice(-8)}</Text></View><MaterialCommunityIcons name="open-in-new" size={17} color={Colors.onPrimary} /></TouchableOpacity> : null}
             </View>
-            <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={() => shareOnWhatsApp(receipt)}><MaterialCommunityIcons name="whatsapp" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>WhatsApp</Text></TouchableOpacity><TouchableOpacity style={styles.secondaryButton} onPress={() => downloadReceipt(`${receiptId}.html`, tx)}><MaterialCommunityIcons name="download" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>Download receipt</Text></TouchableOpacity></View>
+            <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={() => shareReceiptOnWhatsApp(tx)}><MaterialCommunityIcons name="whatsapp" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>WhatsApp</Text></TouchableOpacity><TouchableOpacity style={styles.secondaryButton} onPress={() => downloadReceipt(`${receiptId}.html`, tx)}><MaterialCommunityIcons name="download" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>Download receipt</Text></TouchableOpacity></View>
           </ScrollView>
         </View>
       </View>

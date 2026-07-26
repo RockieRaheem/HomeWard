@@ -39,6 +39,115 @@ export async function shareOnWhatsApp(text: string): Promise<void> {
   await Linking.openURL(`https://wa.me/?text=${encodeURIComponent(text)}`);
 }
 
+/** Shares a visual receipt card. Android Chrome can hand the PNG directly to WhatsApp. */
+export async function shareReceiptOnWhatsApp(tx: TransactionItem): Promise<void> {
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    const file = await createReceiptImage(tx);
+    const shareNavigator = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
+    if (file && shareNavigator.share && (!shareNavigator.canShare || shareNavigator.canShare({ files: [file] }))) {
+      await shareNavigator.share({ files: [file], title: `HomeWard receipt ${receiptNumber(tx)}` });
+      return;
+    }
+  }
+  await shareOnWhatsApp(formatTransactionReceipt(tx));
+}
+
+async function createReceiptImage(tx: TransactionItem): Promise<File | null> {
+  const canvas = document.createElement('canvas');
+  const width = 1080;
+  const height = 1400;
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+
+  const receipt = receiptNumber(tx);
+  const completed = tx.status === 'completed';
+  const failed = tx.status === 'failed';
+  const status = completed ? 'COMPLETED' : failed ? 'FAILED' : 'PENDING CONFIRMATION';
+  const statusBackground = completed ? '#D7F5E9' : failed ? '#FFDAD6' : '#FFDDB5';
+  const statusColor = completed ? '#004336' : failed ? '#93000A' : '#694300';
+  const details = [
+    [tx.type === 'sent' ? 'Recipient' : 'Source', tx.recipientName || 'HomeWard wallet'],
+    ...(tx.recipientPhone ? [['Mobile', tx.recipientPhone]] : []),
+    ...(tx.recipientNetwork ? [['Network', tx.recipientNetwork]] : []),
+    ['Purpose', tx.purpose || 'Transfer'],
+    ['Receipt', receipt],
+    ['Date', new Date(tx.createdAt).toLocaleString('en-UG', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' })],
+    ...(tx.stellarTxHash ? [['Stellar transaction', `${tx.stellarTxHash.slice(0, 18)}...${tx.stellarTxHash.slice(-12)}`]] : []),
+  ];
+
+  context.fillStyle = '#F6FAFE';
+  context.fillRect(0, 0, width, height);
+  roundRect(context, 70, 70, 940, 1260, 42, '#FFFFFF');
+  roundRect(context, 70, 70, 940, 365, 42, '#004336');
+  context.fillStyle = '#FFFFFF';
+  context.font = '800 28px Arial';
+  context.textAlign = 'center';
+  context.fillText('HOMEWARD', width / 2, 142);
+  context.fillStyle = '#A6F1D9';
+  context.font = '400 26px Arial';
+  context.fillText('Transaction receipt', width / 2, 190);
+  context.fillStyle = '#FFFFFF';
+  context.font = '800 57px Arial';
+  context.fillText(`$${tx.amountUsdc.toFixed(2)} USDC`, width / 2, 270);
+  context.font = '400 30px Arial';
+  context.fillText(tx.amountUgx ? `UGX ${tx.amountUgx.toLocaleString()}` : 'UGX value unavailable', width / 2, 320);
+
+  roundRect(context, 350, 405, 380, 56, 28, statusBackground);
+  context.fillStyle = statusColor;
+  context.font = '800 22px Arial';
+  context.fillText(status, width / 2, 441);
+
+  let y = 515;
+  context.textAlign = 'left';
+  details.forEach(([label, value], index) => {
+    context.fillStyle = '#6F7975';
+    context.font = '400 24px Arial';
+    context.fillText(label, 125, y);
+    context.fillStyle = '#171C1F';
+    context.font = '700 24px Arial';
+    const lines = wrapCanvasText(context, value, 500);
+    context.textAlign = 'right';
+    lines.forEach((line, lineIndex) => context.fillText(line, 950, y + lineIndex * 30));
+    context.textAlign = 'left';
+    const rowHeight = Math.max(58, lines.length * 30 + 25);
+    if (index < details.length - 1) {
+      context.strokeStyle = '#EAEFF1';
+      context.lineWidth = 2;
+      context.beginPath(); context.moveTo(125, y + 25); context.lineTo(950, y + 25); context.stroke();
+    }
+    y += rowHeight;
+  });
+  context.fillStyle = '#6F7975';
+  context.font = '400 21px Arial';
+  context.textAlign = 'center';
+  context.fillText('Keep this receipt for your records.', width / 2, 1265);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  return blob ? new File([blob], `${receipt}.png`, { type: 'image/png' }) : null;
+}
+
+function roundRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number, fill: string): void {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
+  context.fillStyle = fill;
+  context.fill();
+}
+
+function wrapCanvasText(context: CanvasRenderingContext2D, value: string, maxWidth: number): string[] {
+  const words = value.split(' ');
+  const lines: string[] = [];
+  let line = '';
+  words.forEach((word) => {
+    const next = line ? `${line} ${word}` : word;
+    if (context.measureText(next).width <= maxWidth || !line) line = next;
+    else { lines.push(line); line = word; }
+  });
+  if (line) lines.push(line);
+  return lines;
+}
+
 export async function downloadText(filename: string, text: string): Promise<void> {
   await downloadFile(filename, text, 'text/plain;charset=utf-8');
 }
