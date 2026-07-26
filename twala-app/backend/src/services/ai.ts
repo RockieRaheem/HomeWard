@@ -38,6 +38,10 @@ function percent(a: number, b: number): number {
   return Math.round((a / b) * 100);
 }
 
+function hasExplicitSendConfirmation(message: string): boolean {
+  return /\bconfirm\s+send\b/i.test(message.trim());
+}
+
 // ---------------------------------------------------------------------------
 // Context builder
 // ---------------------------------------------------------------------------
@@ -82,9 +86,20 @@ Recent txs:\n${txBrief}
 Rate: 1 USDC ≈ UGX 3,750 (0.5% fee, min $0.50)
 
 You can perform these actions via function calls — DO IT when asked:
+## Product facts and responsible-AI rules
+- HomeWard helps diaspora workers fund a family member or a home project in Uganda. Recipients receive UGX via MTN or Airtel; do not expose crypto jargon to recipients.
+- Stellar is TESTNET in this build. A transfer can show an independently verifiable Testnet transaction, but this is not a claim of live regulated settlement.
+- Kotani payout, Africa's Talking SMS, and MoneyGram cash-in are sandbox/prototype integrations unless a production partner is visibly configured. AED cash-in is a transparent Testnet prototype, not a live UAE MoneyGram programme.
+- HomeWard is an orchestration and experience layer, not a bank, money transmitter, FX provider, custodian, or KYC provider.
+- Explain in plain language first. Mention USDC, Stellar, Kotani, or Testnet only when the user asks or needs proof details.
+- Never invent beneficiary details, rates, provider availability, partner approvals, transaction status, or a result you cannot verify from the supplied context.
+- Never send money on a first request. Prepare a Safe-to-send review, ask the user to check it, and require the exact phrase **CONFIRM SEND**. Only then call send_money with confirmedByUser:true.
+- For goal or chat deletion, explain that it is permanent and direct the user to the app's confirmation sheet; do not claim deletion before it has happened.
+- If asked what HomeWard does, say: "Pay abroad, family receives UGX, every payment has a purpose and proof."
+
 1. create_goal(title, targetAmountUgx, category?, description?)
 2. contribute_to_goal(goalId, amountUgx)
-3. send_money(amountUsdc, recipientName, recipientPhone?, recipientNetwork?, purpose)
+3. send_money(amountUsdc, recipientName, recipientPhone?, recipientNetwork?, purpose, confirmedByUser)
 4. update_goal(goalId, title?, targetAmountUgx?, category?, status?, description?)
 5. delete_goal(goalId)
 6. navigate(screen, goalId?) — go to Dashboard | Goals | Transfer | History | GoalDetail
@@ -161,6 +176,7 @@ const TOOLS: any[] = [
           recipientNetwork: { type: 'string', enum: ['MTN', 'AIRTEL'], description: 'Mobile network: MTN or AIRTEL' },
           purpose: { type: 'string', description: 'Purpose (e.g. "Family Support")' },
           confirmSelfSend: { type: 'boolean', description: 'Set to true if the user confirmed they want to send to their own number' },
+          confirmedByUser: { type: 'boolean', description: 'Only set true when the current user message contains the exact phrase CONFIRM SEND' },
         },
         required: ['amountUsdc', 'recipientName', 'recipientPhone', 'purpose'],
       },
@@ -233,7 +249,7 @@ const TOOLS: any[] = [
 // Tool execution (returns clean human-readable messages, no raw JSON)
 // ---------------------------------------------------------------------------
 
-async function executeToolCall(toolCall: any, ctx: AiContext): Promise<string> {
+async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: string): Promise<string> {
   const { name, arguments: rawArgs } = toolCall.function;
   let args: Record<string, any>;
   try { args = JSON.parse(rawArgs); } catch { return `❌ Invalid arguments for ${name}`; }
@@ -287,6 +303,9 @@ async function executeToolCall(toolCall: any, ctx: AiContext): Promise<string> {
 
         const rate = await getExchangeRate();
         const quote = calculateQuote(amountUsdc, rate);
+        if (!args.confirmedByUser || !hasExplicitSendConfirmation(userMessage)) {
+          return `SAFE-TO-SEND REVIEW (not sent): ${args.recipientName} will receive ${fiat(quote.receiveAmountUgx)} via ${network}. You pay ${usdc(quote.sendAmountUsdc)}; fee ${usdc(quote.feeUsdc)}; rate 1 USDC = ${fiat(quote.rate)}. Purpose: ${args.purpose || 'Family support'}. Ask the user to review the recipient details and reply with the exact phrase CONFIRM SEND. Do not say the payment was sent.`;
+        }
         const referenceId = `ai-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
         let stellarTxHash = '';
@@ -468,7 +487,7 @@ async function tryGroqModel(
   }
 
   for (const toolCall of choice.tool_calls) {
-    const result = await executeToolCall(toolCall, ctx);
+    const result = await executeToolCall(toolCall, ctx, userMessage);
     messages.push({ role: 'assistant', content: null, tool_calls: [toolCall] });
     messages.push({ role: 'tool', tool_call_id: toolCall.id, content: result });
   }
