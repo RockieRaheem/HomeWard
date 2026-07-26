@@ -10,7 +10,7 @@ import History from '../screens/History';
 import ProfileScreen from '../screens/ProfileScreen';
 import BottomNavBar, { AppScreen } from '../components/BottomNavBar';
 import { Colors } from '../theme';
-import { setApiAccessToken } from '../services/api';
+import { setApiAccessToken, walletApi } from '../services/api';
 
 interface UserProfile {
   id: string;
@@ -25,10 +25,17 @@ export default function AppNavigator() {
   const [navHistory, setNavHistory] = useState<AppScreen[]>([]);
   const [goalId, setGoalId] = useState<string | null>(null);
   useEffect(() => { setApiAccessToken(user?.accessToken || null); }, [user]);
+  useEffect(() => {
+    if (!user?.accessToken) return;
+    walletApi.info().then((result) => {
+      if (result.success && !result.data) return walletApi.create();
+      return null;
+    }).catch(() => null);
+  }, [user]);
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <ProfileScreen onProfileReady={(p) => setUser(p)} />
+        <ProfileScreen onProfileReady={(p) => { setApiAccessToken(p.accessToken || null); setUser(p); }} />
       </SafeAreaView>
     );
   }

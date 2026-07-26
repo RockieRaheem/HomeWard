@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as stellar from '../services/stellar.js';
 import * as db from '../services/database.js';
 import { notifyChange } from '../services/events.js';
+import config from '../config.js';
 
 const router = Router();
 
@@ -10,6 +11,9 @@ router.post('/create', async (_req, res) => {
     const wallet = await stellar.createWallet();
     await db.saveWallet(wallet);
     await stellar.ensureTrustline(wallet.secretKey);
+    if (config.stellar.network === 'TESTNET') {
+      await stellar.mintTestUsdc(wallet.secretKey, config.testUsdc.initialMintAmount);
+    }
     const freshBalance = await stellar.getBalance(wallet.publicKey);
     res.json({
       success: true,
