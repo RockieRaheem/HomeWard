@@ -38,6 +38,8 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
   const [refreshing, setRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Create form
   const [newTitle, setNewTitle] = useState('');
@@ -86,17 +88,17 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
     }
   };
 
-  const handleDelete = (goalId: string, title: string) => {
-    Alert.alert('Delete Goal', `Permanently delete "${title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          const res = await goalsApi.remove(goalId);
-          if (res.success) { notifyChange(); fetchGoals(); }
-          else Alert.alert('Error', res.message || 'Delete failed');
-        } catch (err: any) { Alert.alert('Error', err.message); }
-      }},
-    ]);
+  const handleDelete = (goalId: string, title: string) => setDeleteCandidate({ id: goalId, title });
+
+  const confirmDelete = async () => {
+    if (!deleteCandidate || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await goalsApi.remove(deleteCandidate.id);
+      if (res.success) { setDeleteCandidate(null); notifyChange(); fetchGoals(); }
+      else Alert.alert('Could not delete goal', res.message || 'Please try again.');
+    } catch (err: any) { Alert.alert('Could not delete goal', err.message || 'Please try again.'); }
+    finally { setDeleting(false); }
   };
 
   const handleEdit = async () => {
@@ -207,6 +209,10 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
           })
         )}
       </ScrollView>
+
+      <Modal visible={!!deleteCandidate} transparent animationType="fade" onRequestClose={() => !deleting && setDeleteCandidate(null)}>
+        <View style={styles.confirmOverlay}><View style={styles.confirmSheet}><View style={styles.confirmIcon}><MaterialCommunityIcons name="trash-can-outline" size={27} color={Colors.error} /></View><Text style={styles.confirmTitle}>Delete this goal?</Text><Text style={styles.confirmText}>“{deleteCandidate?.title}” and its saved project details will be permanently removed.</Text><View style={styles.confirmActions}><TouchableOpacity disabled={deleting} style={styles.confirmCancel} onPress={() => setDeleteCandidate(null)}><Text style={styles.confirmCancelText}>Keep goal</Text></TouchableOpacity><TouchableOpacity disabled={deleting} style={styles.confirmDelete} onPress={confirmDelete}>{deleting ? <ActivityIndicator size="small" color={Colors.onError} /> : <Text style={styles.confirmDeleteText}>Delete goal</Text>}</TouchableOpacity></View></View></View>
+      </Modal>
 
       {/* FAB */}
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => { resetForm(); setShowCreate(true); }}>
@@ -345,6 +351,16 @@ const styles = StyleSheet.create({
   goalRemaining: { fontSize: 11, fontFamily: 'Inter', fontWeight: '500', color: Colors.secondary },
   goalMilestones: { fontSize: 11, fontFamily: 'Inter', color: Colors.outline },
   fab: { position: 'absolute', bottom: 24, right: 20, width: 56, height: 56, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', ...Shadow.level2, borderWidth: 3, borderColor: Colors.surface },
+  confirmOverlay: { flex: 1, backgroundColor: 'rgba(0,32,25,0.48)', justifyContent: 'center', padding: 24 },
+  confirmSheet: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: 24, padding: 22, ...Shadow.level2 },
+  confirmIcon: { width: 52, height: 52, borderRadius: 17, backgroundColor: Colors.errorContainer, alignItems: 'center', justifyContent: 'center' },
+  confirmTitle: { color: Colors.onSurface, fontFamily: 'Montserrat', fontSize: 21, fontWeight: '800', marginTop: 16 },
+  confirmText: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 13, lineHeight: 19, marginTop: 8 },
+  confirmActions: { flexDirection: 'row', gap: 10, marginTop: 23 },
+  confirmCancel: { flex: 1, minHeight: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surfaceContainerLow },
+  confirmCancelText: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 },
+  confirmDelete: { flex: 1, minHeight: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.error },
+  confirmDeleteText: { color: Colors.onError, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: Colors.surface, borderTopLeftRadius: BorderRadius.xl, borderTopRightRadius: BorderRadius.xl, padding: Spacing.gutter, maxHeight: '85%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.gutter },

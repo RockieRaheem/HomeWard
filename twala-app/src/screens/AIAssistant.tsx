@@ -224,6 +224,8 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteChatCandidate, setDeleteChatCandidate] = useState<ChatSessionData | null>(null);
+  const [deletingChat, setDeletingChat] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -287,29 +289,27 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
     }
   };
 
-  const deleteSession = (id: string, title: string) => {
-    Alert.alert('Delete Chat?', `"${title}" will be permanently deleted.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
-          await chatApi.deleteSession(id);
-          const remaining = sessions.filter((s) => s.id !== id);
+  const deleteSession = (id: string, title: string) => setDeleteChatCandidate({ id, title, createdAt: '', lastMessageAt: '' });
+
+  const confirmDeleteChat = async () => {
+    if (!deleteChatCandidate || deletingChat) return;
+    setDeletingChat(true);
+    try {
+      const id = deleteChatCandidate.id;
+      const result = await chatApi.deleteSession(id);
+      if (!result.success) { Alert.alert('Could not delete chat', result.message || 'Please try again.'); return; }
+      const remaining = sessions.filter((s) => s.id !== id);
           setSessions(remaining);
-          if (activeSessionId === id) {
-            if (remaining.length > 0) {
-              loadSessionIntoState(remaining[0].id);
-            } else {
-              const createRes = await chatApi.createSession();
-              if (createRes.success && createRes.data) {
-                setSessions([createRes.data]);
-                setActiveSessionId(createRes.data.id);
-                setMessages([]);
-              }
-            }
+      setDeleteChatCandidate(null);
+      if (activeSessionId === id) {
+        if (remaining.length > 0) loadSessionIntoState(remaining[0].id);
+        else {
+          const createRes = await chatApi.createSession();
+          if (createRes.success && createRes.data) { setSessions([createRes.data]); setActiveSessionId(createRes.data.id); setMessages([]); }
           }
-        },
-      },
-    ]);
+      }
+    } catch (err: any) { Alert.alert('Could not delete chat', err.message || 'Please try again.'); }
+    finally { setDeletingChat(false); }
   };
 
   const sendMessage = async (text: string) => {
@@ -509,6 +509,10 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
         </View>
       </Modal>
 
+      <Modal visible={!!deleteChatCandidate} transparent animationType="fade" onRequestClose={() => !deletingChat && setDeleteChatCandidate(null)}>
+        <View style={styles.deleteOverlay}><View style={styles.deleteSheet}><View style={styles.deleteIcon}><MaterialCommunityIcons name="trash-can-outline" size={27} color={Colors.error} /></View><Text style={styles.deleteTitle}>Delete this chat?</Text><Text style={styles.deleteText}>“{deleteChatCandidate?.title}” and its messages will be permanently removed.</Text><View style={styles.deleteActions}><TouchableOpacity disabled={deletingChat} style={styles.deleteCancel} onPress={() => setDeleteChatCandidate(null)}><Text style={styles.deleteCancelText}>Keep chat</Text></TouchableOpacity><TouchableOpacity disabled={deletingChat} style={styles.deleteConfirm} onPress={confirmDeleteChat}>{deletingChat ? <ActivityIndicator size="small" color={Colors.onError} /> : <Text style={styles.deleteConfirmText}>Delete chat</Text>}</TouchableOpacity></View></View></View>
+      </Modal>
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -664,6 +668,16 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
+  deleteOverlay: { flex: 1, backgroundColor: 'rgba(0,32,25,0.48)', justifyContent: 'center', padding: 24 },
+  deleteSheet: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: 24, padding: 22, ...Shadow.level2 },
+  deleteIcon: { width: 52, height: 52, borderRadius: 17, backgroundColor: Colors.errorContainer, alignItems: 'center', justifyContent: 'center' },
+  deleteTitle: { color: Colors.onSurface, fontFamily: 'Montserrat', fontSize: 21, fontWeight: '800', marginTop: 16 },
+  deleteText: { color: Colors.onSurfaceVariant, fontFamily: 'Inter', fontSize: 13, lineHeight: 19, marginTop: 8 },
+  deleteActions: { flexDirection: 'row', gap: 10, marginTop: 23 },
+  deleteCancel: { flex: 1, minHeight: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surfaceContainerLow },
+  deleteCancelText: { color: Colors.onSurface, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 },
+  deleteConfirm: { flex: 1, minHeight: 48, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.error },
+  deleteConfirmText: { color: Colors.onError, fontFamily: 'Inter', fontWeight: '800', fontSize: 13 },
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
