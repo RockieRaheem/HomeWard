@@ -122,7 +122,7 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
             <TouchableOpacity onPress={onBack} style={styles.backButton}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Kanzu</Text>
+            <Text style={styles.headerTitle}>Goal details</Text>
           </View>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
@@ -140,7 +140,7 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Kanzu</Text>
+          <Text style={styles.headerTitle}>Goal details</Text>
         </View>
         <TouchableOpacity style={styles.sendButton} onPress={handleSendToGoal} activeOpacity={0.8}>
           <MaterialCommunityIcons name="send" size={16} color={Colors.onPrimary} />
@@ -155,14 +155,10 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
       >
         <View style={styles.heroSection}>
           <View style={styles.heroBanner}>
-            <View style={styles.heroIconWrap}>
-              <MaterialCommunityIcons name={getGoalIcon(goal.title) as any} size={40} color={Colors.onPrimary} />
-            </View>
-            <View style={styles.heroBadge}>
-              <MaterialCommunityIcons name="flag" size={14} color={Colors.onSecondaryContainer} />
-              <Text style={styles.heroBadgeText}>{goal.title}</Text>
-            </View>
-            <Text style={styles.heroTitle}>{goal.description || 'Savings Goal'}</Text>
+            <View style={styles.heroTop}><View style={styles.heroIconWrap}><MaterialCommunityIcons name={getGoalIcon(goal.title) as any} size={30} color={Colors.onPrimary} /></View><View style={styles.heroBadge}><View style={styles.heroBadgeDot} /><Text style={styles.heroBadgeText}>{goal.status === 'completed' ? 'Goal completed' : 'Active project'}</Text></View></View>
+            <Text style={styles.heroTitle}>{goal.title}</Text>
+            <Text style={styles.heroDescription}>{goal.description || 'A HomeWard savings project'}</Text>
+            <View style={styles.heroProgressHeader}><Text style={styles.heroProgressLabel}>UGX {formatUgx(goal.savedAmountUgx)} saved</Text><Text style={styles.heroProgressPercent}>{pct}%</Text></View><View style={styles.heroProgressTrack}><View style={[styles.heroProgressFill, { width: `${Math.min(100, pct)}%` }]} /></View><Text style={styles.heroTargetLabel}>Target: {formatUgx(goal.targetAmountUgx)}</Text>
           </View>
 
           <View style={styles.heroStats}>
@@ -357,41 +353,45 @@ export default function GoalDetail({ goalId, onBack, onNavigate }: { goalId?: st
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.containerPaddingMobile, paddingVertical: Spacing.stackSm,
-    backgroundColor: Colors.surface, ...Shadow.level1,
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11, backgroundColor: Colors.surface },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm },
-  backButton: { padding: 8, borderRadius: BorderRadius.full },
-  headerTitle: { fontSize: Typography.headlineMd.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
+  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.surfaceContainerLow, borderRadius: 13 },
+  headerTitle: { fontSize: 17, fontFamily: 'Montserrat', fontWeight: '800', color: Colors.onSurface },
   sendButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.primary, paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: BorderRadius.full, ...Shadow.level1,
+    backgroundColor: Colors.primary, paddingHorizontal: 15, paddingVertical: 10,
+    borderRadius: 13, ...Shadow.level1,
   },
   sendButtonText: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onPrimary },
   scrollContent: { paddingBottom: 100 },
-  heroSection: { paddingHorizontal: Spacing.containerPaddingMobile, paddingTop: Spacing.gutter },
+  heroSection: { paddingHorizontal: 16, paddingTop: 12 },
   heroBanner: {
-    backgroundColor: Colors.primary, borderRadius: BorderRadius.xl, padding: Spacing.gutter,
-    alignItems: 'center', gap: Spacing.stackSm, ...Shadow.level2,
+    backgroundColor: Colors.primary, borderRadius: 24, padding: 20, ...Shadow.level2, overflow: 'hidden',
   },
-  heroIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.secondaryContainer, paddingHorizontal: 12, paddingVertical: 4, borderRadius: BorderRadius.full },
-  heroBadgeText: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSecondaryContainer },
-  heroTitle: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.onPrimary, textAlign: 'center' },
-  heroStats: { flexDirection: 'row', backgroundColor: Colors.surfaceContainerLowest, marginTop: Spacing.stackMd, borderRadius: BorderRadius.xl, padding: Spacing.stackMd, ...Shadow.level1, borderWidth: 1, borderColor: Colors.outlineVariant + '33' },
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroIconWrap: { width: 52, height: 52, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.14)', justifyContent: 'center', alignItems: 'center' },
+  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 10, paddingVertical: 7, borderRadius: BorderRadius.full },
+  heroBadgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.secondaryContainer },
+  heroBadgeText: { fontSize: 11, fontFamily: 'Inter', fontWeight: '700', color: Colors.onPrimary },
+  heroTitle: { fontSize: 25, fontFamily: 'Montserrat', fontWeight: '800', color: Colors.onPrimary, marginTop: 20 },
+  heroDescription: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 12, lineHeight: 17, marginTop: 5 },
+  heroProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
+  heroProgressLabel: { color: Colors.onPrimary, fontFamily: 'Inter', fontWeight: '700', fontSize: 12 },
+  heroProgressPercent: { color: Colors.secondaryContainer, fontFamily: 'Montserrat', fontWeight: '800', fontSize: 18 },
+  heroProgressTrack: { height: 8, backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 4, overflow: 'hidden', marginTop: 7 },
+  heroProgressFill: { height: '100%', backgroundColor: Colors.secondaryContainer, borderRadius: 4 },
+  heroTargetLabel: { color: Colors.primaryFixed, fontFamily: 'Inter', fontSize: 11, marginTop: 7 },
+  heroStats: { flexDirection: 'row', backgroundColor: Colors.surfaceContainerLowest, marginTop: 12, borderRadius: 18, padding: 15, ...Shadow.level1, borderWidth: 1, borderColor: Colors.outlineVariant + '33' },
   heroStat: { flex: 1, alignItems: 'center' },
   heroStatDivider: { width: 1, backgroundColor: Colors.outlineVariant + '4D', marginVertical: 4 },
   heroStatValue: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.primary },
   heroStatLabel: { fontSize: 11, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant, marginTop: 2 },
-  tabRow: { flexDirection: 'row', gap: 4, paddingHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.gutter, backgroundColor: Colors.surfaceContainerLow, marginHorizontal: Spacing.containerPaddingMobile, borderRadius: BorderRadius.lg, padding: 4 },
+  tabRow: { flexDirection: 'row', gap: 4, paddingHorizontal: 4, marginTop: 22, backgroundColor: Colors.surfaceContainerLow, marginHorizontal: 16, borderRadius: 14, padding: 4 },
   tab: { flex: 1, paddingVertical: 10, borderRadius: BorderRadius.md, alignItems: 'center' },
   tabActive: { backgroundColor: Colors.surfaceContainerLowest, ...Shadow.level1 },
   tabText: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant },
   tabTextActive: { color: Colors.primary, fontWeight: '600' },
-  tabContent: { paddingHorizontal: Spacing.containerPaddingMobile, marginTop: Spacing.gutter, gap: Spacing.stackMd },
+  tabContent: { paddingHorizontal: 16, marginTop: 18, gap: Spacing.stackMd },
   overviewGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.stackSm },
   overviewCard: { width: '48%', backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: BorderRadius.xl, borderWidth: 1, borderColor: Colors.outlineVariant + '33', ...Shadow.level1, gap: 4 },
   overviewCardLabel: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant },
