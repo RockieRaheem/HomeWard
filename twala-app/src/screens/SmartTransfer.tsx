@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animated, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animated, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Linking, Modal } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -6,6 +6,7 @@ import { transferApi, moneygramApi, ratesApi, goalsApi, getPendingGoalId, setPen
 import SendSuccess from '../components/SendSuccess';
 
 type TransferMode = 'send' | 'deposit';
+type CashInStep = 'identity' | 'location' | 'review' | 'processing' | 'success' | null;
 
 interface PurposeOption {
   label: string;
@@ -24,6 +25,11 @@ const PURPOSES: PurposeOption[] = [
 ];
 
 const NETWORKS = ['MTN', 'AIRTEL'];
+
+const DEMO_CASH_LOCATIONS = [
+  { id: 'downtown', name: 'Dubai Central cash-in location', area: 'Dubai, UAE', detail: 'Illustrative MoneyGram Ramps Testnet location' },
+  { id: 'al-nahda', name: 'Al Nahda cash-in location', area: 'Dubai, UAE', detail: 'Illustrative MoneyGram Ramps Testnet location' },
+];
 
 const PATH_NODES_SEND = [
   { label: 'Your Wallet', icon: 'wallet' as const, color: 'rgba(255,255,255,0.2)' },
@@ -104,6 +110,154 @@ const stellarStyles = StyleSheet.create({
   footer: { marginTop: Spacing.gutter, textAlign: 'center', fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onPrimary },
 });
 
+interface CashInJourneyProps {
+  step: Exclude<CashInStep, null>;
+  amountAed: number;
+  userName?: string;
+  proof: StellarProof | null;
+  onClose: () => void;
+  onAdvance: () => void;
+  onComplete: () => void;
+  onContinueToSend: () => void;
+}
+
+function CashInJourney({ step, amountAed, userName, proof, onClose, onAdvance, onComplete, onContinueToSend }: CashInJourneyProps) {
+  const [selectedLocation, setSelectedLocation] = useState(DEMO_CASH_LOCATIONS[0].id);
+  const selected = DEMO_CASH_LOCATIONS.find((location) => location.id === selectedLocation) || DEMO_CASH_LOCATIONS[0];
+  const estimatedUsdc = Math.max(1, Math.round((amountAed / 3.67) * 100) / 100);
+  const isProcessing = step === 'processing';
+
+  return (
+    <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
+      <View style={cashInStyles.overlay}>
+        <View style={cashInStyles.sheet}>
+          <View style={cashInStyles.handle} />
+          <View style={cashInStyles.topRow}>
+            <View>
+              <Text style={cashInStyles.eyebrow}>HOMEWARD × MONEYGRAM RAMPS</Text>
+              <Text style={cashInStyles.title}>Cash-in demonstration</Text>
+            </View>
+            {!isProcessing && step !== 'success' && (
+              <TouchableOpacity onPress={onClose} accessibilityLabel="Close cash-in demonstration">
+                <MaterialCommunityIcons name="close" size={24} color={Colors.onSurfaceVariant} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={cashInStyles.testnetBadge}>
+            <MaterialCommunityIcons name="flask-outline" size={15} color={Colors.onPrimary} />
+            <Text style={cashInStyles.testnetBadgeText}>TESTNET DEMONSTRATION — NO REAL CASH IS COLLECTED</Text>
+          </View>
+
+          {step === 'identity' && (
+            <>
+              <View style={cashInStyles.heroIcon}><MaterialCommunityIcons name="shield-account" size={34} color={Colors.onPrimary} /></View>
+              <Text style={cashInStyles.stepTitle}>Confirm your identity</Text>
+              <Text style={cashInStyles.description}>A live MoneyGram journey verifies identity before showing eligible cash-in locations. This screen demonstrates that required step.</Text>
+              <View style={cashInStyles.identityCard}>
+                <View style={cashInStyles.identityRow}>
+                  <MaterialCommunityIcons name="account-check" size={20} color={Colors.primary} />
+                  <View><Text style={cashInStyles.identityLabel}>Customer</Text><Text style={cashInStyles.identityValue}>{userName || 'HomeWard customer'}</Text></View>
+                </View>
+                <View style={cashInStyles.identityRow}>
+                  <MaterialCommunityIcons name="check-decagram" size={20} color={Colors.primary} />
+                  <View><Text style={cashInStyles.identityLabel}>Demo verification</Text><Text style={cashInStyles.identityValue}>Ready for Testnet cash-in</Text></View>
+                </View>
+              </View>
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onAdvance}><Text style={cashInStyles.primaryButtonText}>Continue to location</Text><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+            </>
+          )}
+
+          {step === 'location' && (
+            <>
+              <View style={cashInStyles.heroIcon}><MaterialCommunityIcons name="map-marker-radius" size={34} color={Colors.onPrimary} /></View>
+              <Text style={cashInStyles.stepTitle}>Choose a cash-in location</Text>
+              <Text style={cashInStyles.description}>Live availability is supplied by MoneyGram after approval. Select an illustrative UAE location for this Testnet demonstration.</Text>
+              {DEMO_CASH_LOCATIONS.map((location) => (
+                <TouchableOpacity key={location.id} style={[cashInStyles.locationCard, selectedLocation === location.id && cashInStyles.locationCardActive]} onPress={() => setSelectedLocation(location.id)}>
+                  <MaterialCommunityIcons name={selectedLocation === location.id ? 'radiobox-marked' : 'radiobox-blank'} size={22} color={Colors.primary} />
+                  <View style={{ flex: 1 }}><Text style={cashInStyles.locationName}>{location.name}</Text><Text style={cashInStyles.locationDetail}>{location.area} · {location.detail}</Text></View>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onAdvance}><Text style={cashInStyles.primaryButtonText}>Review cash-in</Text><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+            </>
+          )}
+
+          {step === 'review' && (
+            <>
+              <View style={cashInStyles.heroIcon}><MaterialCommunityIcons name="cash-check" size={34} color={Colors.onPrimary} /></View>
+              <Text style={cashInStyles.stepTitle}>Review cash-in</Text>
+              <Text style={cashInStyles.description}>In production, the agent collects AED cash only after the regulated MoneyGram flow is approved and completed.</Text>
+              <View style={cashInStyles.reviewCard}>
+                <View style={cashInStyles.reviewRow}><Text style={cashInStyles.reviewLabel}>Cash handed to agent</Text><Text style={cashInStyles.reviewValue}>AED {amountAed.toLocaleString()}</Text></View>
+                <View style={cashInStyles.reviewRow}><Text style={cashInStyles.reviewLabel}>Selected location</Text><Text style={cashInStyles.reviewValue}>{selected.name}</Text></View>
+                <View style={cashInStyles.reviewRow}><Text style={cashInStyles.reviewLabel}>HomeWard receives</Text><Text style={cashInStyles.reviewValue}>≈ {estimatedUsdc.toFixed(2)} USDC</Text></View>
+                <View style={cashInStyles.reviewRow}><Text style={cashInStyles.reviewLabel}>Settlement network</Text><Text style={cashInStyles.reviewValue}>Stellar Testnet</Text></View>
+              </View>
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onComplete}><Text style={cashInStyles.primaryButtonText}>Confirm demo cash handover</Text><MaterialCommunityIcons name="shield-check" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+            </>
+          )}
+
+          {step === 'processing' && (
+            <View style={cashInStyles.centeredState}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={cashInStyles.stepTitle}>Settling on Stellar Testnet</Text>
+              <Text style={cashInStyles.description}>Creating a real Testnet USDC transaction and waiting for its ledger confirmation.</Text>
+            </View>
+          )}
+
+          {step === 'success' && proof && (
+            <>
+              <View style={cashInStyles.successIcon}><MaterialCommunityIcons name="check" size={38} color={Colors.onPrimary} /></View>
+              <Text style={cashInStyles.stepTitle}>USDC received in HomeWard</Text>
+              <Text style={cashInStyles.description}>The cash-in demonstration is confirmed on Stellar Testnet. In production, this confirmation follows MoneyGram’s approved cash collection.</Text>
+              <TouchableOpacity style={cashInStyles.ledgerCard} onPress={() => Linking.openURL(proof.explorerUrl)} accessibilityRole="link">
+                <MaterialCommunityIcons name="shield-check" size={22} color={Colors.onPrimary} />
+                <View style={{ flex: 1 }}><Text style={cashInStyles.ledgerTitle}>Verified in Stellar ledger #{proof.ledger}</Text><Text style={cashInStyles.ledgerHash}>{proof.hash.slice(0, 14)}...{proof.hash.slice(-8)}</Text></View>
+                <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.onPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onContinueToSend}><Text style={cashInStyles.primaryButtonText}>Continue to send home</Text><MaterialCommunityIcons name="send" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+            </>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const cashInStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: Spacing.gutter, paddingBottom: 30, minHeight: '70%' },
+  handle: { alignSelf: 'center', width: 42, height: 4, borderRadius: 2, backgroundColor: Colors.outlineVariant, marginBottom: 18 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  eyebrow: { fontSize: 10, fontFamily: 'Inter', fontWeight: '800', color: Colors.primary, letterSpacing: 1 },
+  title: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.onSurface, marginTop: 3 },
+  testnetBadge: { flexDirection: 'row', gap: 6, alignItems: 'center', backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, marginTop: 16 },
+  testnetBadgeText: { flex: 1, fontSize: 10, fontFamily: 'Inter', fontWeight: '800', color: Colors.onPrimary, letterSpacing: 0.3 },
+  heroIcon: { width: 66, height: 66, borderRadius: 33, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginTop: 22, marginBottom: 14 },
+  successIcon: { width: 74, height: 74, borderRadius: 37, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginTop: 22, marginBottom: 14 },
+  stepTitle: { fontSize: Typography.headlineSm.fontSize, fontFamily: 'Montserrat', fontWeight: '700', color: Colors.onSurface, textAlign: 'center' },
+  description: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', lineHeight: 20, color: Colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 },
+  identityCard: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: BorderRadius.xl, padding: 14, gap: 14, marginTop: 20, borderWidth: 1, borderColor: Colors.outlineVariant + '55' },
+  identityRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  identityLabel: { fontSize: 11, fontFamily: 'Inter', color: Colors.onSurfaceVariant },
+  identityValue: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onSurface, marginTop: 2 },
+  locationCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.outlineVariant, marginTop: 12 },
+  locationCardActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryContainer + '22' },
+  locationName: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onSurface },
+  locationDetail: { fontSize: 11, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: 3 },
+  reviewCard: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: BorderRadius.xl, padding: 14, gap: 12, marginTop: 20 },
+  reviewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 },
+  reviewLabel: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant },
+  reviewValue: { flex: 1, fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onSurface, textAlign: 'right' },
+  centeredState: { alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: 340, gap: 14 },
+  ledgerCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.primaryContainer, padding: 14, borderRadius: BorderRadius.xl, marginTop: 20 },
+  ledgerTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '800', color: Colors.onPrimary },
+  ledgerHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, marginTop: 3 },
+  primaryButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, backgroundColor: Colors.primary, borderRadius: BorderRadius.full, paddingVertical: 15, marginTop: 24 },
+  primaryButtonText: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '800', color: Colors.onPrimary },
+});
+
 interface Props {
   user?: { id: string; name: string; phone: string };
 }
@@ -130,6 +284,7 @@ export default function SmartTransfer({ user }: Props = {}) {
   } | null>(null);
   const [fundingProof, setFundingProof] = useState<StellarProof | null>(null);
   const [moneygramStatus, setMoneygramStatus] = useState<{ configured: boolean; environment: 'TESTNET' | 'PRODUCTION'; walletDomain: string | null } | null>(null);
+  const [cashInStep, setCashInStep] = useState<CashInStep>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const scrollRef = useRef<ScrollView>(null);
   const amountRef = useRef<TextInput>(null);
@@ -297,7 +452,8 @@ export default function SmartTransfer({ user }: Props = {}) {
       // journey, keep the demo useful by performing the matching real
       // Stellar Testnet funding transaction rather than returning a 503.
       if (!moneygramStatus?.configured) {
-        return handleTestnetFunding();
+        setCashInStep('identity');
+        return;
       }
       setSubmitting(true);
       try {
@@ -320,18 +476,21 @@ export default function SmartTransfer({ user }: Props = {}) {
     }
   };
 
-  const handleTestnetFunding = async () => {
+  const completeTestnetCashIn = async () => {
     const fiatAmount = parseFloat(amount.replace(/,/g, '')) || 0;
     const testUsdc = Math.max(1, Math.round((fiatAmount / 3.67) * 100) / 100);
+    setCashInStep('processing');
     setSubmitting(true);
     try {
       const res = await transferApi.demoFund(testUsdc);
       if (!res.success || !res.data) {
+        setCashInStep('review');
         return Alert.alert('Testnet funding failed', res.message || 'Stellar Testnet did not accept the transaction.');
       }
       setFundingProof(res.data.proof);
-      Alert.alert('Confirmed on Stellar Testnet', res.data.message);
+      setCashInStep('success');
     } catch (err) {
+      setCashInStep('review');
       Alert.alert('Testnet funding failed', err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
@@ -599,6 +758,19 @@ export default function SmartTransfer({ user }: Props = {}) {
             </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {cashInStep && (
+        <CashInJourney
+          step={cashInStep}
+          amountAed={parseFloat(amount.replace(/,/g, '')) || 0}
+          userName={user?.name}
+          proof={fundingProof}
+          onClose={() => setCashInStep(null)}
+          onAdvance={() => setCashInStep((current) => current === 'identity' ? 'location' : 'review')}
+          onComplete={completeTestnetCashIn}
+          onContinueToSend={() => { setCashInStep(null); switchMode('send'); }}
+        />
+      )}
 
       <SendSuccess
         visible={!!successData}
