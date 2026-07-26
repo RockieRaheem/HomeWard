@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Image } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -7,6 +7,8 @@ import { authApi } from '../services/api';
 interface Props {
   onProfileReady: (profile: { id: string; name: string; phone: string }) => void;
 }
+
+const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
 
 export default function ProfileScreen({ onProfileReady }: Props) {
   const [mode, setMode] = useState<'register' | 'login'>('register');
@@ -69,9 +71,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.content}>
         <View style={styles.brand}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>T</Text>
-          </View>
+          <Image source={HOMEWARD_LOGO} style={styles.logoCircle} accessibilityLabel="HomeWard logo" />
           <Text style={styles.brandName}>HomeWard</Text>
           <Text style={styles.tagline}>Send money to Uganda — fast & secure</Text>
         </View>

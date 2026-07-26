@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Dimensions, ActivityIndicator, AppState } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Dimensions, ActivityIndicator, AppState, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState, useCallback, useEffect } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -6,6 +6,7 @@ import type { AppScreen } from '../components/BottomNavBar';
 import { walletApi, ratesApi, historyApi, goalsApi, eventsApi, type GoalData } from '../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -140,12 +141,10 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, user }: { on
       >
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <View style={styles.avatarPlaceholder}>
-              <MaterialCommunityIcons name="account" size={24} color={Colors.onPrimary} />
-            </View>
+            <Image source={HOMEWARD_LOGO} style={styles.brandLogo} accessibilityLabel="HomeWard logo" />
             <View>
               <Text style={styles.appTitle}>HomeWard</Text>
-              <Text style={styles.appSub}>Financial Companion</Text>
+              <Text style={styles.appSub}>Your home money companion</Text>
             </View>
           </View>
         </View>
@@ -309,7 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, ...Shadow.level1,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.stackSm },
-  avatarPlaceholder: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  brandLogo: { width: 42, height: 42, borderRadius: 13 },
   appTitle: { fontSize: Typography.headlineMd.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
   appSub: { fontSize: 11, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant, marginTop: -2 },
   welcomeSection: { paddingHorizontal: Spacing.containerPaddingMobile, paddingTop: Spacing.gutter },

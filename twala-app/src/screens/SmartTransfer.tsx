@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animated, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Linking, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Animated, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard, Linking, Modal, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
@@ -25,6 +25,17 @@ const PURPOSES: PurposeOption[] = [
 ];
 
 const NETWORKS = ['MTN', 'AIRTEL'];
+const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
+
+function getInitials(name?: string) {
+  return (name || 'HomeWard')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+}
 
 const DEMO_CASH_LOCATIONS = [
   { id: 'downtown', name: 'Dubai Central cash-in location', area: 'Dubai, UAE', detail: 'Illustrative MoneyGram Ramps Testnet location' },
@@ -501,11 +512,15 @@ export default function SmartTransfer({ user }: Props = {}) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Smart Transfer</Text>
+          <Image source={HOMEWARD_LOGO} style={styles.headerLogo} accessibilityLabel="HomeWard logo" />
+          <View>
+            <Text style={styles.headerBrand}>HomeWard</Text>
+            <Text style={styles.headerTitle}>Smart Transfer</Text>
+          </View>
         </View>
         <View style={styles.headerRight}>
-          <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarText}>KZ</Text>
+          <View style={styles.headerAvatar} accessibilityLabel={`${user?.name || 'HomeWard user'} profile`}>
+            <Text style={styles.headerAvatarText}>{getInitials(user?.name)}</Text>
           </View>
         </View>
       </View>
@@ -799,10 +814,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.containerPaddingMobile, paddingVertical: Spacing.stackSm,
     backgroundColor: Colors.surface, ...Shadow.level1,
   },
-  headerLeft: {},
-  headerTitle: { fontSize: Typography.headlineMd.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerLogo: { width: 40, height: 40, borderRadius: 12 },
+  headerBrand: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Montserrat', fontWeight: '800', color: Colors.primary },
+  headerTitle: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '600', color: Colors.onSurfaceVariant, marginTop: 1 },
   headerRight: {},
-  headerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primaryContainer, justifyContent: 'center', alignItems: 'center' },
+  headerAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.primaryFixed },
   headerAvatarText: { fontSize: 14, fontWeight: '700', color: Colors.onPrimary },
   scrollContent: { padding: Spacing.containerPaddingMobile, paddingBottom: 96, flexGrow: 1 },
   modeToggle: { flexDirection: 'row', gap: 8, marginTop: Spacing.gutter, marginBottom: Spacing.stackMd },
