@@ -293,6 +293,12 @@ export default function SmartTransfer({ user }: Props = {}) {
     } else {
       const fiatAmount = parseFloat(amount.replace(/,/g, '')) || 0;
       if (fiatAmount < 1) return Alert.alert('Enter an amount', 'Enter at least AED 1 to continue.');
+      // Until MoneyGram approves HomeWard and supplies its hosted cash-in
+      // journey, keep the demo useful by performing the matching real
+      // Stellar Testnet funding transaction rather than returning a 503.
+      if (!moneygramStatus?.configured) {
+        return handleTestnetFunding();
+      }
       setSubmitting(true);
       try {
         const res = await moneygramApi.cashIn(fiatAmount);
@@ -463,13 +469,6 @@ export default function SmartTransfer({ user }: Props = {}) {
               </View>
             )}
 
-            {mode === 'deposit' && (
-              <TouchableOpacity style={styles.testnetButton} onPress={handleTestnetFunding} disabled={submitting}>
-                <MaterialCommunityIcons name="shield-check" size={17} color={Colors.primary} />
-                <Text style={styles.testnetButtonText}>Run MoneyGram cash-in Testnet proof</Text>
-              </TouchableOpacity>
-            )}
-
             {mode === 'deposit' && fundingProof && (
               <TouchableOpacity style={styles.proofBanner} onPress={() => Linking.openURL(fundingProof.explorerUrl)} accessibilityRole="link">
                 <MaterialCommunityIcons name="shield-check" size={22} color={Colors.primary} />
@@ -589,7 +588,11 @@ export default function SmartTransfer({ user }: Props = {}) {
                     color={Colors.onPrimary}
                   />
                   <Text style={styles.submitText}>
-                    {mode === 'send' ? 'Send Money' : 'Continue to MoneyGram'}
+                    {mode === 'send'
+                      ? 'Send Money'
+                      : moneygramStatus?.configured
+                        ? 'Continue to MoneyGram'
+                        : 'Run MoneyGram Testnet cash-in'}
                   </Text>
                 </>
               )}
