@@ -157,13 +157,12 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
             const icon = getGoalIcon(goal.category);
 
             return (
-              <TouchableOpacity
+              <View
                 key={goal.id}
                 style={styles.goalCard}
-                activeOpacity={0.7}
-                onPress={() => onNavigateGoal?.(goal.id)}
               >
                 <View style={styles.goalHeader}>
+                  <TouchableOpacity style={styles.goalOpenHeader} activeOpacity={0.7} onPress={() => onNavigateGoal?.(goal.id)}>
                   <View style={[styles.goalIcon, { backgroundColor: goal.status === 'completed' ? '#DDF2E9' : '#EAF4F0' }]}>
                     <MaterialCommunityIcons name={icon as any} size={22} color={Colors.primary} />
                   </View>
@@ -173,16 +172,18 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
                       {goal.status === 'completed' ? '✅ Completed' : goal.status === 'cancelled' ? '❌ Cancelled' : `${pct}% funded`}
                     </Text>
                   </View>
+                  </TouchableOpacity>
                   <View style={styles.goalActions}>
-                    <TouchableOpacity onPress={(event) => { event.stopPropagation(); setEditGoalId(goal.id); setEditTitle(goal.title); setEditTarget(String(goal.targetAmountUgx)); setEditCategory(goal.category); setEditDesc(goal.description || ''); setShowEdit(goal.id); }} style={styles.actionBtn}>
+                    <TouchableOpacity onPress={() => { setEditGoalId(goal.id); setEditTitle(goal.title); setEditTarget(String(goal.targetAmountUgx)); setEditCategory(goal.category); setEditDesc(goal.description || ''); setShowEdit(goal.id); }} style={styles.actionBtn}>
                       <MaterialCommunityIcons name="pencil" size={18} color={Colors.outline} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={(event) => { event.stopPropagation(); handleDelete(goal.id, goal.title); }} style={styles.actionBtn}>
+                    <TouchableOpacity onPress={() => handleDelete(goal.id, goal.title)} style={styles.actionBtn}>
                       <MaterialCommunityIcons name="delete-outline" size={18} color={Colors.error} />
                     </TouchableOpacity>
                   </View>
                 </View>
 
+                <TouchableOpacity style={styles.goalOpenContent} activeOpacity={0.7} onPress={() => onNavigateGoal?.(goal.id)}>
                 <View style={styles.goalProgressRow}>
                   <Text style={styles.goalSaved}>UGX {formatUgx(goal.savedAmountUgx)}</Text>
                   <Text style={styles.goalTarget}>Target UGX {formatUgx(goal.targetAmountUgx)}</Text>
@@ -200,7 +201,8 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
                     {goal.milestones?.length || 0} milestone{(goal.milestones?.length || 0) !== 1 ? 's' : ''}
                   </Text>
                 </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </View>
             );
           })
         )}
@@ -326,6 +328,8 @@ const styles = StyleSheet.create({
   emptyCtaText: { color: Colors.onPrimary, fontFamily: 'Inter', fontSize: 12, fontWeight: '800' },
   goalCard: { marginHorizontal: 20, backgroundColor: Colors.surfaceContainerLowest, borderRadius: 19, padding: 15, ...Shadow.level1, marginBottom: 12, borderWidth: 1, borderColor: Colors.outlineVariant + '4A' },
   goalHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  goalOpenHeader: { flex: 1, flexDirection: 'row', alignItems: 'center', minWidth: 0 },
+  goalOpenContent: { borderRadius: 12 },
   goalIcon: { width: 43, height: 43, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   goalHeaderInfo: { flex: 1, marginLeft: Spacing.stackSm },
   goalTitle: { fontSize: 14, fontFamily: 'Inter', fontWeight: '800', color: Colors.onSurface },
