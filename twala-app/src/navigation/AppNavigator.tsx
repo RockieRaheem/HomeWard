@@ -8,6 +8,7 @@ import SmartTransfer from '../screens/SmartTransfer';
 import GoalDetail from '../screens/GoalDetail';
 import History from '../screens/History';
 import ProfileScreen from '../screens/ProfileScreen';
+import Circles from '../screens/Circles';
 import BottomNavBar, { AppScreen } from '../components/BottomNavBar';
 import { Colors } from '../theme';
 import { setApiAccessToken, walletApi } from '../services/api';
@@ -86,6 +87,8 @@ export default function AppNavigator() {
         return <GoalDetail goalId={goalId} onBack={handleBack} onNavigate={navigate} />;
       case 'History':
         return <History />;
+      case 'Circles':
+        return <Circles onNavigate={navigate} />;
       default:
         return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} user={user} />;
     }

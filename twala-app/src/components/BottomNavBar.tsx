@@ -19,7 +19,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'History', label: 'History', icon: 'history' },
 ];
 
-export type AppScreen = 'Dashboard' | 'Goals' | 'Assistant' | 'Transfer' | 'History' | 'GoalDetail';
+export type AppScreen = 'Dashboard' | 'Goals' | 'Assistant' | 'Transfer' | 'History' | 'GoalDetail' | 'Circles';
 
 interface Props {
   activeRoute: AppScreen;

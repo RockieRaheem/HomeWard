@@ -158,6 +158,30 @@ export interface RecipientData {
   createdAt: string;
 }
 
+export interface RecipientPassportData extends RecipientData {
+  transferCount: number;
+  usualAmountUsdc: number;
+  lastSuccessfulNetwork?: 'MTN' | 'AIRTEL';
+  lastSuccessfulPayment?: TransactionItem;
+}
+
+export interface CircleData {
+  id: string;
+  name: string;
+  description?: string;
+  recipientId?: string;
+  goalId?: string;
+  recurringAmountUsdc: number;
+  purpose: string;
+  status: 'active' | 'paused';
+  createdAt: string;
+  recipient?: RecipientData;
+  goal?: GoalData;
+  contributionCount: number;
+  totalContributedUgx: number;
+  lastPayment?: TransactionItem;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -338,6 +362,14 @@ export const recipientsApi = {
   create: (recipient: Omit<RecipientData, 'id' | 'createdAt'>) => request<RecipientData>('/recipients', { method: 'POST', body: JSON.stringify(recipient) }),
   update: (id: string, recipient: Omit<RecipientData, 'id' | 'createdAt'>) => request<RecipientData>(`/recipients/${id}`, { method: 'PUT', body: JSON.stringify(recipient) }),
   remove: (id: string) => request<{ success: boolean }>(`/recipients/${id}`, { method: 'DELETE' }),
+  passport: (id: string) => request<RecipientPassportData>(`/recipients/${id}/passport`),
+};
+
+export const circlesApi = {
+  list: () => request<CircleData[]>('/circles'),
+  create: (circle: { name: string; description?: string; recipientId?: string; goalId?: string; recurringAmountUsdc: number; purpose?: string }) => request<CircleData>('/circles', { method: 'POST', body: JSON.stringify(circle) }),
+  update: (id: string, circle: Partial<CircleData>) => request<CircleData>(`/circles/${id}`, { method: 'PUT', body: JSON.stringify(circle) }),
+  remove: (id: string) => request<{ success: boolean }>(`/circles/${id}`, { method: 'DELETE' }),
 };
 
 export const authApi = {
