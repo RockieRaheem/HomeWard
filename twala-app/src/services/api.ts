@@ -232,9 +232,11 @@ export const transferApi = {
     request<TransferQuote>(`/transfer/quote?amount=${amount}`),
 
   offramp: (body: { amountUsdc: number; recipientName: string; recipientPhone?: string; recipientNetwork?: string; purpose: string; goalId?: string; senderName?: string; senderPhone?: string; confirmSelfSend?: boolean }) =>
-    request<{ transaction: TransactionItem; quote: TransferQuote; kotaniReferenceId: string; stellarTxHash: string; stellarExplorerUrl: string; stellarNetwork: 'TESTNET' | 'PUBLIC'; payoutMode: string; balance: number; sms: { success: boolean; message: string } | null; message: string }>(
+    request<{ transaction: TransactionItem; quote: TransferQuote; kotaniReferenceId: string; stellarTxHash: string; stellarExplorerUrl: string; stellarNetwork: 'TESTNET' | 'PUBLIC'; payoutMode: string; balance: number; sms: { success: boolean; message: string } | null; recipientConfirmationExpiresAt?: string; message: string }>(
       '/transfer/offramp', { method: 'POST', body: JSON.stringify(body) }, 30000
     ),
+  confirmRecipientReceipt: (transactionId: string, code: string) =>
+    request<{ confirmed: boolean; message: string }>(`/transfer/${transactionId}/confirm-recipient`, { method: 'POST', body: JSON.stringify({ code }) }),
 
   demoFund: (amountUsdc: number) =>
     request<{ transaction: TransactionItem; balance: number; proof: StellarProof; fundingMode: string; message: string }>(

@@ -39,6 +39,19 @@ CREATE TABLE IF NOT EXISTS recipients (
 );
 CREATE INDEX IF NOT EXISTS idx_recipients_user_id ON recipients(user_id, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS receipt_confirmations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  transaction_id UUID NOT NULL UNIQUE REFERENCES transactions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  recipient_phone TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  confirmed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_receipt_confirmations_user_id ON receipt_confirmations(user_id, created_at DESC);
+
 -- After the scoped backend is deployed and this migration has run, make ownership mandatory.
 -- Do this only after confirming every real record has an owner:
 -- ALTER TABLE wallets ALTER COLUMN user_id SET NOT NULL;

@@ -21,6 +21,7 @@ function buildSmsContent(params: {
   recipientName: string;
   amountUgx: number;
   senderName: string;
+  confirmationCode?: string;
 }): string {
   const ref = `HW-${Date.now().toString(36).toUpperCase().slice(-6)}`;
   const date = new Intl.DateTimeFormat('en-UG', {
@@ -38,6 +39,7 @@ function buildSmsContent(params: {
     '',
     `Receipt: ${ref}`,
     date,
+    ...(params.confirmationCode ? ['', `Confirm receipt with HomeWard code: ${params.confirmationCode}`, 'Code expires in 15 minutes.'] : []),
     '',
     'Keep this SMS as your receipt.',
   // GSM SMS defines LF as the standard line-feed character. The simulator may
@@ -172,6 +174,7 @@ export async function sendTransferNotification(params: {
   amountUgx: number;
   amountUsdc: number;
   senderName: string;
+  confirmationCode?: string;
 }): Promise<SmsResult> {
   const phone = formatPhone(params.phoneNumber || '');
   if (!phone || phone === '+') return { success: false, message: 'No phone number provided' };
@@ -180,6 +183,7 @@ export async function sendTransferNotification(params: {
     recipientName: params.recipientName,
     amountUgx: params.amountUgx,
     senderName: params.senderName,
+    confirmationCode: params.confirmationCode,
   });
 
   const result = await sendViaAfricasTalking(phone, message);
@@ -199,6 +203,7 @@ export async function sendTransferNotificationAsync(params: {
   amountUgx: number;
   amountUsdc: number;
   senderName: string;
+  confirmationCode?: string;
 }): Promise<void> {
   try {
     await sendTransferNotification(params);
