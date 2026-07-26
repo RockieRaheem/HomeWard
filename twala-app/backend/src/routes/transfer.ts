@@ -189,13 +189,22 @@ router.post('/offramp', async (req, res) => {
       callbackUrl: `${req.protocol}://${req.get('host')}/api/transfer/webhook`,
     });
 
+    // Stellar Testnet has no real UGX settlement. Treat a confirmed on-chain
+    // transaction as a completed simulation so the demo history matches its
+    // receipt and SMS. Production retains pending webhook/status handling.
+    const isTestnetSimulation = config.stellar.network === 'TESTNET';
+    const transactionStatus = isTestnetSimulation ? 'completed' : 'pending';
+    const payoutStatus = isTestnetSimulation
+      ? 'SIMULATED_COMPLETED'
+      : kotaniResult.data?.status || 'PENDING';
+
     // Step 5: Create transaction record in DB
     const tx = await db.createTransaction({
       type: 'sent', amountUsdc: quote.sendAmountUsdc, amountUgx: quote.receiveAmountUgx,
       rate: quote.rate, recipientName: recipientName.trim(), recipientPhone: recipientPhone || '',
       recipientNetwork: (recipientNetwork as 'MTN' | 'AIRTEL') || 'MTN',
-      status: 'pending', purpose: purpose.trim(), stellarTxHash,
-      kotaniReferenceId: referenceId, kotaniStatus: kotaniResult.data?.status || 'PENDING',
+      status: transactionStatus, purpose: purpose.trim(), stellarTxHash,
+      kotaniReferenceId: referenceId, kotaniStatus: payoutStatus,
       goalId: goalId || undefined,
     });
 
@@ -224,7 +233,7 @@ router.post('/offramp', async (req, res) => {
         stellarTxHash,
         stellarExplorerUrl: stellar.getExplorerTransactionUrl(stellarTxHash),
         stellarNetwork: config.stellar.network,
-        payoutMode: hasKotaniApiKey ? 'KOTANI_PARTNER' : 'SIMULATED_MOBILE_MONEY_REAL_STELLAR_TESTNET',
+        payoutMode: isTestnetSimulation ? 'SIMULATED_MOBILE_MONEY_REAL_STELLAR_TESTNET' : 'KOTANI_PARTNER',
         balance: newBalance.usdc,
         sms: null, // SMS sent async, check logs
         message: `${quote.receiveAmountUgx.toLocaleString()} UGX sent to ${recipientName.trim()} via ${recipientNetwork || 'MTN'} Mobile Money. Reference: ${referenceId.slice(-8)}`,

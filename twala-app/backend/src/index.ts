@@ -118,7 +118,7 @@ kotani.onOfframpComplete(async (referenceId, status) => {
   try {
     const tx = await db.getTransactionByKotaniRef(referenceId);
     if (tx && tx.status === 'pending') {
-      const newStatus = status === 'completed' ? 'completed' : 'failed';
+      const newStatus = ['completed', 'SUCCESSFUL', 'REFUNDED'].includes(status) ? 'completed' : 'failed';
       await db.updateTransaction(tx.id, { status: newStatus, kotaniStatus: status });
       notifyChange();
       console.log(`  ✅ Kotani offramp ${referenceId.slice(-8)} → ${status}`);
@@ -128,6 +128,25 @@ kotani.onOfframpComplete(async (referenceId, status) => {
     console.error(`  Kotani callback error: ${msg}`);
   }
 });
+
+// Older Testnet transfers were stored as pending while waiting for a sandbox
+// callback. They have no real fiat payout, so reconcile verified demo records
+// once when this Testnet backend starts. Production records are never touched.
+async function reconcileTestnetTransactions(): Promise<void> {
+  if (config.stellar.network !== 'TESTNET') return;
+  const pending = await db.getPendingTransactions();
+  let reconciled = 0;
+  for (const tx of pending) {
+    if (tx.stellarTxHash) {
+      await db.updateTransaction(tx.id, { status: 'completed', kotaniStatus: 'SIMULATED_COMPLETED' });
+      reconciled++;
+    }
+  }
+  if (reconciled > 0) {
+    notifyChange();
+    console.log(`  ✅ Reconciled ${reconciled} Stellar Testnet demo transaction${reconciled === 1 ? '' : 's'}`);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Background poller for pending transactions — catches stale demo offramps
@@ -178,6 +197,7 @@ app.listen(config.port, '0.0.0.0', async () => {
 
   // Step 1: Initialize test USDC issuer
   await stellar.initializeTestUsdc();
+  await reconcileTestnetTransactions();
 
   // Step 2: Check for existing wallet in DB
   let existing = await db.getWallet().catch(() => null);

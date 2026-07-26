@@ -313,12 +313,13 @@ async function executeToolCall(toolCall: any, ctx: AiContext): Promise<string> {
           chain: 'STELLAR', token: 'USDC', transactionHash: stellarTxHash,
         });
 
+        const isTestnetSimulation = config.stellar.network === 'TESTNET';
         await db.createTransaction({
           type: 'sent', amountUsdc: quote.sendAmountUsdc, amountUgx: quote.receiveAmountUgx,
           rate: quote.rate, recipientName: args.recipientName, recipientPhone: args.recipientPhone || '',
-          recipientNetwork: network, status: 'pending', purpose: args.purpose || 'Transfer',
+          recipientNetwork: network, status: isTestnetSimulation ? 'completed' : 'pending', purpose: args.purpose || 'Transfer',
           stellarTxHash, kotaniReferenceId: referenceId,
-          kotaniStatus: kotaniResult.data?.status || 'pending',
+          kotaniStatus: isTestnetSimulation ? 'SIMULATED_COMPLETED' : kotaniResult.data?.status || 'pending',
         });
 
         // Send SMS if phone provided (fire-and-forget)
