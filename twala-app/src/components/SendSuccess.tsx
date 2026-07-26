@@ -13,6 +13,9 @@ interface SendSuccessProps {
   referenceId: string;
   newBalance: number;
   goalTitle?: string;
+  purpose?: string;
+  recipientRelationship?: string;
+  confirmedAt?: string;
   feeUsdc: number;
   rate: number;
   stellarTxHash?: string;
@@ -22,7 +25,7 @@ interface SendSuccessProps {
 
 export default function SendSuccess({
   visible, amountUsdc, amountUgx, recipientName, recipientPhone,
-  recipientNetwork, referenceId, newBalance, goalTitle,
+  recipientNetwork, referenceId, newBalance, goalTitle, purpose, recipientRelationship, confirmedAt,
   feeUsdc, rate, stellarTxHash, stellarExplorerUrl, onDone,
 }: SendSuccessProps) {
   const scale = useRef(new Animated.Value(0)).current;
@@ -90,6 +93,10 @@ export default function SendSuccess({
               </View>
             ) : null}
 
+            {recipientRelationship ? <View style={styles.detailRow}><MaterialCommunityIcons name="account-heart-outline" size={16} color={Colors.onSurfaceVariant} /><Text style={styles.detailLabel}>Relationship</Text><Text style={styles.detailValue}>{recipientRelationship}</Text></View> : null}
+
+            {purpose ? <View style={styles.detailRow}><MaterialCommunityIcons name="target" size={16} color={Colors.onSurfaceVariant} /><Text style={styles.detailLabel}>Purpose</Text><Text style={styles.detailValue}>{purpose}</Text></View> : null}
+
             <View style={styles.detailRow}>
               <MaterialCommunityIcons name="receipt" size={16} color={Colors.onSurfaceVariant} />
               <Text style={styles.detailLabel}>Fee</Text>
@@ -115,12 +122,10 @@ export default function SendSuccess({
             </View>
 
             {goalTitle ? (
-              <View style={styles.detailRow}>
-                <MaterialCommunityIcons name="piggy-bank" size={16} color={Colors.secondary} />
-                <Text style={[styles.detailLabel, { color: Colors.secondary }]}>Goal</Text>
-                <Text style={[styles.detailValue, { color: Colors.secondary }]}>{goalTitle}</Text>
-              </View>
+              <View style={styles.goalImpact}><MaterialCommunityIcons name="flag-checkered" size={20} color={Colors.primary} /><View style={{ flex: 1 }}><Text style={styles.goalImpactLabel}>FAMILY OUTCOME UPDATED</Text><Text style={styles.goalImpactTitle}>{goalTitle}</Text><Text style={styles.goalImpactText}>This transfer has been linked to the family goal.</Text></View></View>
             ) : null}
+
+            {confirmedAt ? <View style={styles.consentNote}><MaterialCommunityIcons name="shield-check-outline" size={15} color={Colors.primary} /><Text style={styles.consentText}>Confirmed by you {new Date(confirmedAt).toLocaleString('en-UG', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' })}</Text></View> : null}
 
             {stellarTxHash && stellarExplorerUrl ? (
               <TouchableOpacity
@@ -194,6 +199,12 @@ const styles = StyleSheet.create({
   proofText: { flex: 1 },
   proofTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onPrimary },
   proofHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, marginTop: 2 },
+  goalImpact: { flexDirection: 'row', gap: 9, backgroundColor: '#EAF6F1', padding: 12, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#C5E7D8' },
+  goalImpactLabel: { color: Colors.primary, fontSize: 9, letterSpacing: 0.8, fontFamily: 'Inter', fontWeight: '800' },
+  goalImpactTitle: { color: Colors.onSurface, fontSize: 13, fontFamily: 'Inter', fontWeight: '800', marginTop: 2 },
+  goalImpactText: { color: Colors.onSurfaceVariant, fontSize: 10, fontFamily: 'Inter', marginTop: 3 },
+  consentNote: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 9, borderRadius: 10, backgroundColor: Colors.surfaceContainerLow },
+  consentText: { flex: 1, color: Colors.primary, fontSize: 10, fontFamily: 'Inter', fontWeight: '600' },
   doneButton: {
     backgroundColor: Colors.primary, paddingVertical: 16,
     borderRadius: BorderRadius.full, alignItems: 'center',

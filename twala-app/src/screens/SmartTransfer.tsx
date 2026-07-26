@@ -294,6 +294,7 @@ export default function SmartTransfer({ user }: Props = {}) {
     recipientPhone?: string; recipientNetwork?: string;
     referenceId: string; newBalance: number; feeUsdc: number; rate: number;
     goalTitle?: string; stellarTxHash?: string; stellarExplorerUrl?: string;
+    purpose?: string; recipientRelationship?: string; confirmedAt?: string;
   } | null>(null);
   const [fundingProof, setFundingProof] = useState<StellarProof | null>(null);
   const [moneygramStatus, setMoneygramStatus] = useState<{ configured: boolean; environment: 'TESTNET' | 'PRODUCTION'; walletDomain: string | null } | null>(null);
@@ -408,6 +409,7 @@ export default function SmartTransfer({ user }: Props = {}) {
             feeUsdc: quote!.feeUsdc,
             rate: quote!.rate,
             goalTitle: g?.title,
+            purpose: selectedPurpose.label.replace(/^.*?\s/, ''), recipientRelationship, confirmedAt: new Date().toISOString(),
             stellarTxHash: res.data.stellarTxHash,
             stellarExplorerUrl: res.data.stellarExplorerUrl,
           });
@@ -439,6 +441,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                     recipientNetwork, referenceId: retryRes.data.kotaniReferenceId,
                     newBalance: retryRes.data.balance ?? 0, feeUsdc: quote!.feeUsdc,
                     rate: quote!.rate, goalTitle: g?.title,
+                    purpose: selectedPurpose.label.replace(/^.*?\s/, ''), recipientRelationship, confirmedAt: new Date().toISOString(),
                     stellarTxHash: retryRes.data.stellarTxHash,
                     stellarExplorerUrl: retryRes.data.stellarExplorerUrl,
                   });
@@ -816,6 +819,9 @@ export default function SmartTransfer({ user }: Props = {}) {
         feeUsdc={successData?.feeUsdc ?? 0}
         rate={successData?.rate ?? 0}
         goalTitle={successData?.goalTitle}
+        purpose={successData?.purpose}
+        recipientRelationship={successData?.recipientRelationship}
+        confirmedAt={successData?.confirmedAt}
         stellarTxHash={successData?.stellarTxHash}
         stellarExplorerUrl={successData?.stellarExplorerUrl}
         onDone={() => setSuccessData(null)}
