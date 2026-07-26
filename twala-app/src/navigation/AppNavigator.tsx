@@ -76,7 +76,7 @@ export default function AppNavigator() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'Dashboard':
-        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} user={user} />;
+        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} onProfileUpdate={(name) => setUser((current) => current ? { ...current, name } : current)} user={user} />;
       case 'Goals':
         return <Goals onNavigateGoal={navigateToGoal} />;
       case 'Assistant':
@@ -90,7 +90,7 @@ export default function AppNavigator() {
       case 'Circles':
         return <Circles onNavigate={navigate} />;
       default:
-        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} user={user} />;
+        return <HomeDashboard onNavigate={navigate} onNavigateGoal={navigateToGoal} onSignOut={signOut} onProfileUpdate={(name) => setUser((current) => current ? { ...current, name } : current)} user={user} />;
     }
   };
 

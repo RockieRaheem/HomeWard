@@ -784,3 +784,10 @@ export async function createProfile(input: {
     createdAt: data.created_at,
   };
 }
+
+export async function updateCurrentProfile(input: { name: string }): Promise<UserProfile | null> {
+  const { data, error } = await db().from('profiles').update({ name: input.name, updated_at: new Date().toISOString() }).eq('id', requireUserId()).select().single();
+  if (error && error.code === 'PGRST116') return null;
+  checkError(error, 'updateCurrentProfile');
+  return data ? { id: data.id, name: data.name, phone: data.phone, pinHash: data.pin_hash, createdAt: data.created_at } : null;
+}

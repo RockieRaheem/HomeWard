@@ -384,6 +384,8 @@ export const authApi = {
 
   check: (phone: string) =>
     request<{ exists: boolean }>(`/auth/check/${phone}`),
+
+  updateProfile: (name: string) => request<UserProfile>('/auth/profile', { method: 'PATCH', body: JSON.stringify({ name }) }),
 };
 
 export const eventsApi = {

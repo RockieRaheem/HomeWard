@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import * as db from '../services/database.js';
 import { createSessionToken } from '../services/session.js';
 import type { UserProfile } from '../types/index.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -110,6 +111,20 @@ router.get('/profile/:id', async (req, res) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ success: false, message: msg });
+  }
+});
+
+// Profile changes remain tied to the signed-in session. Phone and PIN changes
+// deliberately require a separate verified flow and are not exposed here.
+router.patch('/profile', requireAuth, async (req, res) => {
+  try {
+    const name = String(req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ success: false, message: 'Full name is required' });
+    const profile = await db.updateCurrentProfile({ name });
+    if (!profile) return res.status(404).json({ success: false, message: 'Profile not found' });
+    res.json({ success: true, data: sanitize(profile) });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err instanceof Error ? err.message : String(err) });
   }
 });
 
