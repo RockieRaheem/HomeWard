@@ -174,10 +174,10 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
                     </Text>
                   </View>
                   <View style={styles.goalActions}>
-                    <TouchableOpacity onPress={() => { setEditGoalId(goal.id); setEditTitle(goal.title); setEditTarget(String(goal.targetAmountUgx)); setEditCategory(goal.category); setEditDesc(goal.description || ''); setShowEdit(goal.id); }} style={styles.actionBtn}>
+                    <TouchableOpacity onPress={(event) => { event.stopPropagation(); setEditGoalId(goal.id); setEditTitle(goal.title); setEditTarget(String(goal.targetAmountUgx)); setEditCategory(goal.category); setEditDesc(goal.description || ''); setShowEdit(goal.id); }} style={styles.actionBtn}>
                       <MaterialCommunityIcons name="pencil" size={18} color={Colors.outline} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleDelete(goal.id, goal.title)} style={styles.actionBtn}>
+                    <TouchableOpacity onPress={(event) => { event.stopPropagation(); handleDelete(goal.id, goal.title); }} style={styles.actionBtn}>
                       <MaterialCommunityIcons name="delete-outline" size={18} color={Colors.error} />
                     </TouchableOpacity>
                   </View>
