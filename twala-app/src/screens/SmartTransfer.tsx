@@ -134,6 +134,7 @@ interface CashInJourneyProps {
 }
 
 function CashInJourney({ step, amountAed, userName, proof, onClose, onAdvance, onComplete, onContinueToSend }: CashInJourneyProps) {
+  const { t } = useLanguage();
   const [selectedLocation, setSelectedLocation] = useState(DEMO_CASH_LOCATIONS[0].id);
   const selected = DEMO_CASH_LOCATIONS.find((location) => location.id === selectedLocation) || DEMO_CASH_LOCATIONS[0];
   const estimatedUsdc = Math.max(1, Math.round((amountAed / 3.67) * 100) / 100);
@@ -147,7 +148,7 @@ function CashInJourney({ step, amountAed, userName, proof, onClose, onAdvance, o
           <View style={cashInStyles.topRow}>
             <View>
               <Text style={cashInStyles.eyebrow}>HOMEWARD × MONEYGRAM RAMPS</Text>
-              <Text style={cashInStyles.title}>Cash-in demonstration</Text>
+              <Text style={cashInStyles.title}>{t('Cash-in demonstration')}</Text>
             </View>
             {!isProcessing && step !== 'success' && (
               <TouchableOpacity onPress={onClose} accessibilityLabel="Close cash-in demonstration">
@@ -164,42 +165,42 @@ function CashInJourney({ step, amountAed, userName, proof, onClose, onAdvance, o
           {step === 'identity' && (
             <>
               <View style={cashInStyles.heroIcon}><MaterialCommunityIcons name="shield-account" size={34} color={Colors.onPrimary} /></View>
-              <Text style={cashInStyles.stepTitle}>Confirm your identity</Text>
-              <Text style={cashInStyles.description}>A live MoneyGram journey verifies identity before showing eligible cash-in locations. This screen demonstrates that required step.</Text>
+              <Text style={cashInStyles.stepTitle}>{t('Confirm your identity')}</Text>
+              <Text style={cashInStyles.description}>{t('A live MoneyGram journey verifies identity before showing eligible cash-in locations. This screen demonstrates that required step.')}</Text>
               <View style={cashInStyles.identityCard}>
                 <View style={cashInStyles.identityRow}>
                   <MaterialCommunityIcons name="account-check" size={20} color={Colors.primary} />
-                  <View><Text style={cashInStyles.identityLabel}>Customer</Text><Text style={cashInStyles.identityValue}>{userName || 'HomeWard customer'}</Text></View>
+                  <View><Text style={cashInStyles.identityLabel}>{t('Customer')}</Text><Text style={cashInStyles.identityValue}>{userName || t('HomeWard customer')}</Text></View>
                 </View>
                 <View style={cashInStyles.identityRow}>
                   <MaterialCommunityIcons name="check-decagram" size={20} color={Colors.primary} />
-                  <View><Text style={cashInStyles.identityLabel}>Demo verification</Text><Text style={cashInStyles.identityValue}>Ready for Testnet cash-in</Text></View>
+                  <View><Text style={cashInStyles.identityLabel}>{t('Demo verification')}</Text><Text style={cashInStyles.identityValue}>{t('Ready for Testnet cash-in')}</Text></View>
                 </View>
               </View>
-              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onAdvance}><Text style={cashInStyles.primaryButtonText}>Continue to location</Text><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onAdvance}><Text style={cashInStyles.primaryButtonText}>{t('Continue to location')}</Text><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onPrimary} /></TouchableOpacity>
             </>
           )}
 
           {step === 'location' && (
             <>
               <View style={cashInStyles.heroIcon}><MaterialCommunityIcons name="map-marker-radius" size={34} color={Colors.onPrimary} /></View>
-              <Text style={cashInStyles.stepTitle}>Choose a cash-in location</Text>
-              <Text style={cashInStyles.description}>Live availability is supplied by MoneyGram after approval. Select an illustrative UAE location for this Testnet demonstration.</Text>
+              <Text style={cashInStyles.stepTitle}>{t('Choose a cash-in location')}</Text>
+              <Text style={cashInStyles.description}>{t('Live availability is supplied by MoneyGram after approval. Select an illustrative UAE location for this Testnet demonstration.')}</Text>
               {DEMO_CASH_LOCATIONS.map((location) => (
                 <TouchableOpacity key={location.id} style={[cashInStyles.locationCard, selectedLocation === location.id && cashInStyles.locationCardActive]} onPress={() => setSelectedLocation(location.id)}>
                   <MaterialCommunityIcons name={selectedLocation === location.id ? 'radiobox-marked' : 'radiobox-blank'} size={22} color={Colors.primary} />
                   <View style={{ flex: 1 }}><Text style={cashInStyles.locationName}>{location.name}</Text><Text style={cashInStyles.locationDetail}>{location.area} · {location.detail}</Text></View>
                 </TouchableOpacity>
               ))}
-              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onAdvance}><Text style={cashInStyles.primaryButtonText}>Review cash-in</Text><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onAdvance}><Text style={cashInStyles.primaryButtonText}>{t('Review cash-in')}</Text><MaterialCommunityIcons name="arrow-right" size={20} color={Colors.onPrimary} /></TouchableOpacity>
             </>
           )}
 
           {step === 'review' && (
             <>
               <View style={cashInStyles.heroIcon}><MaterialCommunityIcons name="cash-check" size={34} color={Colors.onPrimary} /></View>
-              <Text style={cashInStyles.stepTitle}>Review cash-in</Text>
-              <Text style={cashInStyles.description}>In production, the agent collects AED cash only after the regulated MoneyGram flow is approved and completed.</Text>
+              <Text style={cashInStyles.stepTitle}>{t('Review cash-in')}</Text>
+              <Text style={cashInStyles.description}>{t('In production, the agent collects AED cash only after the regulated MoneyGram flow is approved and completed.')}</Text>
               <View style={cashInStyles.reviewCard}>
                 <View style={cashInStyles.reviewRow}><Text style={cashInStyles.reviewLabel}>Cash handed to agent</Text><Text style={cashInStyles.reviewValue}>AED {amountAed.toLocaleString()}</Text></View>
                 <View style={cashInStyles.reviewRow}><Text style={cashInStyles.reviewLabel}>Selected location</Text><Text style={cashInStyles.reviewValue}>{selected.name}</Text></View>
@@ -213,22 +214,22 @@ function CashInJourney({ step, amountAed, userName, proof, onClose, onAdvance, o
           {step === 'processing' && (
             <View style={cashInStyles.centeredState}>
               <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={cashInStyles.stepTitle}>Settling on Stellar Testnet</Text>
-              <Text style={cashInStyles.description}>Creating a real Testnet USDC transaction and waiting for its ledger confirmation.</Text>
+              <Text style={cashInStyles.stepTitle}>{t('Settling on Stellar Testnet')}</Text>
+              <Text style={cashInStyles.description}>{t('Creating a real Testnet USDC transaction and waiting for its ledger confirmation.')}</Text>
             </View>
           )}
 
           {step === 'success' && proof && (
             <>
               <View style={cashInStyles.successIcon}><MaterialCommunityIcons name="check" size={38} color={Colors.onPrimary} /></View>
-              <Text style={cashInStyles.stepTitle}>USDC received in HomeWard</Text>
+              <Text style={cashInStyles.stepTitle}>{t('USDC received in HomeWard')}</Text>
               <Text style={cashInStyles.description}>The cash-in demonstration is confirmed on Stellar Testnet. In production, this confirmation follows MoneyGram’s approved cash collection.</Text>
               <TouchableOpacity style={cashInStyles.ledgerCard} onPress={() => Linking.openURL(proof.explorerUrl)} accessibilityRole="link">
                 <MaterialCommunityIcons name="shield-check" size={22} color={Colors.onPrimary} />
                 <View style={{ flex: 1 }}><Text style={cashInStyles.ledgerTitle}>Verified in Stellar ledger #{proof.ledger}</Text><Text style={cashInStyles.ledgerHash}>{proof.hash.slice(0, 14)}...{proof.hash.slice(-8)}</Text></View>
                 <MaterialCommunityIcons name="open-in-new" size={18} color={Colors.onPrimary} />
               </TouchableOpacity>
-              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onContinueToSend}><Text style={cashInStyles.primaryButtonText}>Continue to send home</Text><MaterialCommunityIcons name="send" size={20} color={Colors.onPrimary} /></TouchableOpacity>
+              <TouchableOpacity style={cashInStyles.primaryButton} onPress={onContinueToSend}><Text style={cashInStyles.primaryButtonText}>{t('Continue to send home')}</Text><MaterialCommunityIcons name="send" size={20} color={Colors.onPrimary} /></TouchableOpacity>
             </>
           )}
         </View>

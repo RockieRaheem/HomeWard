@@ -4,18 +4,20 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { BorderRadius, Colors, Spacing, Typography } from '../theme';
 import { circlesApi, goalsApi, recipientsApi, type CircleData, type GoalData, type RecipientData } from '../services/api';
 import type { AppScreen } from '../components/BottomNavBar';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function Circles({ onNavigate }: { onNavigate: (screen: AppScreen) => void }) {
+  const { t } = useLanguage();
   const [circles, setCircles] = useState<CircleData[]>([]);
   const [recipients, setRecipients] = useState<RecipientData[]>([]);
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [name, setName] = useState(''); const [amount, setAmount] = useState(''); const [purpose, setPurpose] = useState('Family support');
   const [recipientId, setRecipientId] = useState<string | undefined>(); const [goalId, setGoalId] = useState<string | undefined>(); const [saving, setSaving] = useState(false); const [loading, setLoading] = useState(true);
-  const load = useCallback(() => Promise.all([circlesApi.list(), recipientsApi.list(), goalsApi.list()]).then(([circleResponse, recipientResponse, goalResponse]) => { if (circleResponse.success) setCircles(circleResponse.data || []); if (recipientResponse.success) setRecipients(recipientResponse.data || []); if (goalResponse.success) setGoals(goalResponse.data || []); }).catch(() => Alert.alert('Could not load circles', 'Check your connection and try again.')).finally(() => setLoading(false)), []);
+  const load = useCallback(() => Promise.all([circlesApi.list(), recipientsApi.list(), goalsApi.list()]).then(([circleResponse, recipientResponse, goalResponse]) => { if (circleResponse.success) setCircles(circleResponse.data || []); if (recipientResponse.success) setRecipients(recipientResponse.data || []); if (goalResponse.success) setGoals(goalResponse.data || []); }).catch(() => Alert.alert(t('Could not load circles'), t('Check your connection and try again.'))).finally(() => setLoading(false)), [t]);
   useEffect(() => { load(); }, [load]);
   const create = async () => {
-    if (!name.trim() || !amount || (!recipientId && !goalId)) return Alert.alert('Complete your circle', 'Add a name, recurring amount, and a trusted recipient or goal.');
-    setSaving(true); try { const response = await circlesApi.create({ name: name.trim(), recurringAmountUsdc: Number(amount), purpose, recipientId, goalId }); if (!response.success) return Alert.alert('Could not create circle', response.message || 'Please try again.'); setName(''); setAmount(''); setPurpose('Family support'); setRecipientId(undefined); setGoalId(undefined); await load(); } finally { setSaving(false); }
+    if (!name.trim() || !amount || (!recipientId && !goalId)) return Alert.alert(t('Complete your circle'), t('Add a name, recurring amount, and a trusted recipient or goal.'));
+    setSaving(true); try { const response = await circlesApi.create({ name: name.trim(), recurringAmountUsdc: Number(amount), purpose, recipientId, goalId }); if (!response.success) return Alert.alert(t('Could not create circle'), response.message || t('Please try again.')); setName(''); setAmount(''); setPurpose('Family support'); setRecipientId(undefined); setGoalId(undefined); await load(); } finally { setSaving(false); }
   };
   const toggle = async (circle: CircleData) => { const response = await circlesApi.update(circle.id, { status: circle.status === 'active' ? 'paused' : 'active' }); if (response.success) await load(); };
   const share = (circle: CircleData) => Share.share({ message: `HomeWard Circle: ${circle.name}\n${circle.purpose}\nPlan: $${circle.recurringAmountUsdc.toFixed(2)} USDC each time\nContributions: ${circle.contributionCount}\nTotal delivered: UGX ${circle.totalContributedUgx.toLocaleString()}${circle.lastPayment ? `\nLatest receipt: HW-${circle.lastPayment.id.replace(/-/g, '').slice(-8).toUpperCase()}` : ''}` });

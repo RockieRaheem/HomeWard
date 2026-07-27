@@ -3,8 +3,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import type { TransactionItem } from '../services/api';
 import { downloadReceipt, shareReceiptOnWhatsApp } from '../utils/transactionActions';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function TransactionReceipt({ transaction, onClose }: { transaction: TransactionItem | null; onClose: () => void }) {
+  const { t } = useLanguage();
   if (!transaction) return null;
   const tx = transaction;
   const isSent = tx.type === 'sent';
@@ -16,25 +18,25 @@ export default function TransactionReceipt({ transaction, onClose }: { transacti
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.handle} />
-          <View style={styles.header}><View><Text style={styles.eyebrow}>HOMEWARD RECEIPT</Text><Text style={styles.title}>Transaction details</Text></View><TouchableOpacity onPress={onClose}><MaterialCommunityIcons name="close" size={24} color={Colors.onSurfaceVariant} /></TouchableOpacity></View>
+          <View style={styles.header}><View><Text style={styles.eyebrow}>HOMEWARD {t('RECEIPT')}</Text><Text style={styles.title}>{t('Transaction details')}</Text></View><TouchableOpacity onPress={onClose}><MaterialCommunityIcons name="close" size={24} color={Colors.onSurfaceVariant} /></TouchableOpacity></View>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.amountPanel}>
               <MaterialCommunityIcons name={isSent ? 'send-check' : 'download-circle'} size={26} color={Colors.onPrimary} />
-              <Text style={styles.amountLabel}>{isSent ? 'You sent' : 'You received'}</Text>
+              <Text style={styles.amountLabel}>{isSent ? t('You sent') : t('You received')}</Text>
               <Text style={styles.amount}>${tx.amountUsdc.toFixed(2)} USDC</Text>
               {tx.amountUgx ? <Text style={styles.ugx}>UGX {tx.amountUgx.toLocaleString()}</Text> : null}
             </View>
-            <View style={styles.status}><View style={[styles.dot, { backgroundColor: statusColor }]} /><Text style={[styles.statusText, { color: statusColor }]}>{tx.status === 'completed' ? 'Completed' : tx.status === 'failed' ? 'Failed' : 'Pending confirmation'}</Text></View>
+            <View style={styles.status}><View style={[styles.dot, { backgroundColor: statusColor }]} /><Text style={[styles.statusText, { color: statusColor }]}>{tx.status === 'completed' ? t('Completed') : tx.status === 'failed' ? t('Failed') : t('Pending confirmation')}</Text></View>
             <View style={styles.details}>
-              <Row icon="account" label={isSent ? 'Recipient' : 'Source'} value={tx.recipientName || 'HomeWard wallet'} />
-              {tx.recipientPhone ? <Row icon="phone" label="Mobile" value={tx.recipientPhone} /> : null}
-              {tx.recipientNetwork ? <Row icon="signal-cellular-3" label="Network" value={tx.recipientNetwork} /> : null}
-              <Row icon="target" label="Purpose" value={tx.purpose || 'Transfer'} />
-              <Row icon="barcode-scan" label="Receipt" value={receiptId} />
-              <Row icon="calendar-clock" label="Date" value={new Date(tx.createdAt).toLocaleString('en-UG', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' })} />
-              {tx.stellarTxHash ? <TouchableOpacity style={styles.stellarRow} onPress={() => Linking.openURL(`https://stellar.expert/explorer/testnet/tx/${tx.stellarTxHash}`)}><MaterialCommunityIcons name="shield-check" size={18} color={Colors.onPrimary} /><View style={{ flex: 1 }}><Text style={styles.stellarTitle}>Verified on Stellar Testnet</Text><Text style={styles.stellarHash}>{tx.stellarTxHash.slice(0, 14)}...{tx.stellarTxHash.slice(-8)}</Text></View><MaterialCommunityIcons name="open-in-new" size={17} color={Colors.onPrimary} /></TouchableOpacity> : null}
+              <Row icon="account" label={isSent ? t('Recipient') : t('Source')} value={tx.recipientName || t('HomeWard wallet')} />
+              {tx.recipientPhone ? <Row icon="phone" label={t('Mobile')} value={tx.recipientPhone} /> : null}
+              {tx.recipientNetwork ? <Row icon="signal-cellular-3" label={t('Network')} value={tx.recipientNetwork} /> : null}
+              <Row icon="target" label={t('Purpose')} value={tx.purpose || t('Transfer')} />
+              <Row icon="barcode-scan" label={t('Receipt')} value={receiptId} />
+              <Row icon="calendar-clock" label={t('Date')} value={new Date(tx.createdAt).toLocaleString('en-UG', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' })} />
+              {tx.stellarTxHash ? <TouchableOpacity style={styles.stellarRow} onPress={() => Linking.openURL(`https://stellar.expert/explorer/testnet/tx/${tx.stellarTxHash}`)}><MaterialCommunityIcons name="shield-check" size={18} color={Colors.onPrimary} /><View style={{ flex: 1 }}><Text style={styles.stellarTitle}>{t('Verified on Stellar Testnet')}</Text><Text style={styles.stellarHash}>{tx.stellarTxHash.slice(0, 14)}...{tx.stellarTxHash.slice(-8)}</Text></View><MaterialCommunityIcons name="open-in-new" size={17} color={Colors.onPrimary} /></TouchableOpacity> : null}
             </View>
-            <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={() => shareReceiptOnWhatsApp(tx)}><MaterialCommunityIcons name="whatsapp" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>WhatsApp</Text></TouchableOpacity><TouchableOpacity style={styles.secondaryButton} onPress={() => downloadReceipt(`${receiptId}.html`, tx)}><MaterialCommunityIcons name="download" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>Download receipt</Text></TouchableOpacity></View>
+            <View style={styles.actions}><TouchableOpacity style={styles.secondaryButton} onPress={() => shareReceiptOnWhatsApp(tx)}><MaterialCommunityIcons name="whatsapp" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>WhatsApp</Text></TouchableOpacity><TouchableOpacity style={styles.secondaryButton} onPress={() => downloadReceipt(`${receiptId}.html`, tx)}><MaterialCommunityIcons name="download" size={18} color={Colors.primary} /><Text style={styles.secondaryText}>{t('Download receipt')}</Text></TouchableOpacity></View>
           </ScrollView>
         </View>
       </View>
