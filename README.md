@@ -1,266 +1,198 @@
 <p align="center">
-  <img src="twala-app/assets/branding/homeward-logo.png" width="112" alt="HomeWard logo" />
+  <img src="twala-app/assets/branding/homeward-logo.png" width="120" alt="HomeWard logo" />
 </p>
 
 <h1 align="center">HomeWard</h1>
 
-<p align="center"><strong>Send home. Stay connected.</strong></p>
+<p align="center"><strong>Send home with purpose, proof, and peace of mind.</strong></p>
 
 <p align="center">
   <a href="https://homeward-staging.vercel.app/">Live demo</a> ·
-  <a href="#demo-journey">Demo journey</a> ·
-  <a href="#what-is-real-today">Prototype boundaries</a> ·
-  <a href="#run-it-locally">Run locally</a>
+  <a href="#demo-flow">Demo flow</a> ·
+  <a href="#prototype-boundaries">Prototype boundaries</a> ·
+  <a href="#run-locally">Run locally</a>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Stellar-Testnet-7B2FBE?style=for-the-badge&logo=stellar&logoColor=white" alt="Stellar Testnet" />
-  <img src="https://img.shields.io/badge/React%20Native-Expo-000020?style=for-the-badge&logo=expo&logoColor=white" alt="Expo" />
-  <img src="https://img.shields.io/badge/USDC-Stellar_Testnet-2775CA?style=for-the-badge" alt="USDC" />
-  <img src="https://img.shields.io/badge/AI-Groq_%2B_Gemini-4285F4?style=for-the-badge" alt="AI" />
+  <img src="https://img.shields.io/badge/USDC-Testnet-2775CA?style=for-the-badge" alt="Test USDC" />
+  <img src="https://img.shields.io/badge/Expo-React_Native-000020?style=for-the-badge&logo=expo&logoColor=white" alt="Expo" />
+  <img src="https://img.shields.io/badge/Ugandan_languages-Sunbird_AI-00843D?style=for-the-badge" alt="Sunbird AI" />
 </p>
 
 ---
 
-## The idea
+## Why HomeWard
 
-Sending money home is rarely just a transfer. It can be school fees, medicine, rent, land, or the next stage of a family home. Yet diaspora workers still face unclear costs, wrong-number anxiety, and little visibility after they press send.
+For many Ugandans abroad, a transfer home is not merely money movement. It is school fees, rent, medical support, land, construction, or a regular promise to family. Existing flows often leave senders worried about wrong numbers, unclear fees, and whether the intended person received the money.
 
-**HomeWard** is a mobile-first, purpose-led remittance experience for people supporting family in Uganda. It combines trusted recipient passports, transparent transfer review, family funding circles, goals, receipts, private accounts, and verifiable Stellar Testnet settlement proof.
+HomeWard is a mobile-first remittance experience designed around **people, purpose, and proof**. It helps a sender verify a trusted recipient, understand the expected UGX amount before confirming, organise recurring family support, and retain a clear receipt with independent Stellar Testnet evidence.
 
-The intended production journey is simple:
+> The intended experience: pay abroad → family receives UGX on mobile money → both people have a clear record.
 
-> Pay abroad → family receives Uganda shillings on mobile money → both people have proof.
-
-The sender never needs to understand USDC, Stellar, or blockchain. Those are the rails underneath the experience.
-
-## Why it matters
-
-| The sender worries about | HomeWard responds with |
-| --- | --- |
-| “Did I send to the correct person?” | Private trusted-recipient list, exact phone/network review, and explicit confirmation. |
-| “What will my family actually receive?” | Up-front UGX estimate, rate, fee, purpose, and receipt. |
-| “Can I prove where the money went?” | Transaction history, shareable receipt, SMS notification, and Stellar Testnet proof. |
-| “I support more than one person or project.” | Goals for school fees, land, construction, business, and family support. |
-| “How do I keep regular family support organised?” | HomeWard Circles group a recipient or goal, planned amount, contribution history, and latest receipt. |
-| “I do not understand crypto.” | Familiar mobile-first language and an AI guide that explains rather than overwhelms. |
-
----
+The user does not need to understand USDC or Stellar. Those are implementation rails, not product jargon.
 
 ## What we built
 
-### A safer way to send
+### Safe-to-send transfers
 
-- Private account sessions and owner-scoped wallets, goals, chats, recipients, and history.
-- A separate Stellar Testnet wallet and USDC trustline for each signed-in demo user.
-- Trusted recipients with name, Uganda phone, MTN/Airtel network, relationship, update, and removal controls.
-- **Recipient Passport**: initials, known-since date, completed-payment count, usual transfer amount, monthly plan, latest successful payment, and a visible network-change warning.
-- A Safe-to-send review showing recipient, amount, expected UGX, fee, rate, purpose, and delivery estimate before money moves.
-- Detailed receipts, export/share actions, transaction history, and in-app updates.
+- Private sign-in sessions and user-scoped wallets, history, goals, chats, recipients, and notifications.
+- Individual Stellar Testnet wallets with Test USDC and independently inspectable transaction hashes.
+- Trusted recipients with full name, phone number, MTN/Airtel network, relationship, and optional monthly support plan.
+- Recipient Passports showing known-since date, completed transfers, usual amount, latest payment, and changes to recipient details.
+- A deliberate review before sending: recipient, network, amount, expected UGX, rate, fee, purpose, and delivery estimate.
+- Smart transfer guardrails for a new recipient, unusual amount, changed network, or amount above a saved monthly plan.
 
-### Family coordination with HomeWard Circles
+### Goals and HomeWard Circles
 
-Circles turn recurring support into an organised family plan without allowing automatic payments.
+- Goals for school fees, land, construction, business, savings, and family support.
+- Progress, milestones, contribution history, and receipts connected to each goal.
+- Circles for recurring support such as “Mum’s monthly support” or “Brian’s school fees.”
+- Each Circle has a recipient or goal, planned amount, purpose, contribution totals, latest receipt, share summary, and pause/resume control.
+- Circles do **not** send money automatically. Every payment still needs the sender’s explicit confirmation.
 
-- Create a circle such as *Mum’s monthly support*, *Brian’s school fees*, or *Wakiso house project*.
-- Link it to a trusted recipient, a home goal, or both.
-- Save the intended recurring USDC amount and purpose.
-- See completed-payment count, UGX delivered, the latest receipt, and a shareable summary.
-- Pause or resume the plan at any time. Every transfer still requires a deliberate Safe-to-send confirmation.
+### AI and accessible language support
 
-### Real blockchain proof
+- An AI assistant that can explain balances, goals, history, rates, and transfer preparation.
+- Server-side guardrails: the assistant cannot settle a payment on its own; the user must explicitly confirm a protected transfer action.
+- Sunbird AI integration for Ugandan-language translation, speech-to-text, text-to-speech, and conversational fallback when configured.
+- A persistent language picker with Luganda coverage across the core account, dashboard, transfer, goals, history, Circles, and receipt journeys.
 
-- USDC transfers are submitted to **Stellar Testnet**.
-- A transaction hash and Horizon explorer link make the ledger record independently inspectable.
-- Testnet cash-in demonstrates the funding leg and wallet balance update on-chain.
+### Proof and communication
 
-### Purpose, not just payment
+- In-app receipts, downloadable receipts, WhatsApp sharing, history filters, and Circle summaries.
+- Africa’s Talking Sandbox SMS receipts for registered simulator numbers.
+- Stellar Testnet transaction hashes and explorer links for real Testnet ledger proof.
 
-- Create family goals for land, home construction, education, savings, or business.
-- Track contributions, milestones, progress, and goal-specific transaction records.
-- Keep the financial reason visible alongside the payment.
+## Demo flow
 
-### Responsible AI companion
-
-HomeWard’s AI can explain balances, rates, goals, and recent activity in plain language. It can help prepare an action, but it cannot decide to send money on its own.
-
-- Fresh wallet, goal, transaction, and trusted-recipient context is loaded for every chat request.
-- Hidden reasoning/HTML-like output is removed before it reaches the user.
-- Similar goal creation is paused for confirmation instead of silently duplicating plans.
-- AI-assisted payments are limited to exact trusted-recipient matches.
-- A transfer requires the user’s explicit `CONFIRM SEND` instruction and server-side validation.
-- Server-side guardrails compare a proposed payment to the recipient’s normal history and monthly plan, flag network changes, and require `CONFIRM HIGHER AMOUNT` plus `CONFIRM SEND` before an unusual payment can proceed.
-
-### Built for real-world access
-
-- Lightweight React Native Web interface designed for a mobile browser.
-- SMS transfer-status receipts through Africa’s Talking Sandbox.
-- Downloadable and shareable receipt cards; Circle summaries can also be shared with family.
-- Assisted recipient setup is deliberately sender-controlled: someone may help enter details, but the signed-in sender must review and save the Recipient Passport before it is used.
-
-USSD, WhatsApp, and a live agent portal are future partner integrations, not capabilities we claim to operate today.
-
----
-
-## Demo journey
-
-1. Register with a name, Uganda phone number, and PIN.
-2. HomeWard provisions an individual Stellar Testnet wallet and Test USDC balance.
-3. Add a trusted recipient with their full name, MTN/Airtel number, relationship, and optional monthly support plan.
-4. Open their Recipient Passport to inspect their history and verify any changed details.
-5. Optionally create a Circle for their regular support or a home goal.
-6. Enter a transfer amount and purpose, then review the expected UGX amount and fee.
-7. Confirm the transfer. HomeWard submits a real Stellar Testnet USDC transaction.
-8. Open the Stellar explorer proof and view the updated history, Circle, goal progress, and receipt.
-
----
-
-## What is real today
-
-Honesty is part of the product. The table below separates the working prototype from the partner approvals required for a public financial service.
-
-| Capability | Current state |
-| --- | --- |
-| Individual app accounts, private data, Recipient Passports, Circles, goals, receipts, and AI safety controls | Implemented in the prototype |
-| Stellar wallet provisioning, USDC trustline, USDC transfer, and transaction proof | **Real on Stellar Testnet** |
-| Africa’s Talking SMS | Sandbox integration; messages display only in the registered sandbox simulator |
-| Kotani Pay off-ramp | Sandbox/demo integration; not a promise of live UGX settlement |
-| MoneyGram cash-in | Transparent Testnet demonstration; a live UAE programme needs MoneyGram approval and allowlisting |
-| UAE funding, KYC/AML, AED conversion, custody, FX, and Uganda mobile-money settlement | Require regulated and licensed partners before public launch |
-
-HomeWard is therefore a **working Testnet product prototype and partner-ready experience layer**, not a licensed remittance service.
-
----
+1. Create an account using a name, phone number, and PIN.
+2. HomeWard provisions a user-specific Stellar Testnet wallet and Test USDC balance.
+3. Add a trusted recipient with their full name, MTN/Airtel number, relationship, and optional monthly plan.
+4. Review the recipient’s Passport before sending.
+5. Optionally create a Goal or Circle for recurring family support.
+6. Enter an amount and purpose; HomeWard shows the expected UGX, rate, and fee.
+7. Review and explicitly confirm the transfer.
+8. HomeWard sends Test USDC on Stellar Testnet and presents the transaction hash, receipt, history entry, and related Goal/Circle update.
 
 ## Architecture
 
 ```text
-                    ┌───────────────────────────────┐
-                    │        HomeWard mobile app     │
-                    │  Expo / React Native / Web     │
-                    └───────────────┬───────────────┘
-                                    │ signed session
-                    ┌───────────────▼───────────────┐
-                    │  Express + TypeScript backend │
-                    │  transfer · goals · AI · auth │
-                    └───┬───────────┬───────────┬───┘
-                        │           │           │
-           ┌────────────▼───┐ ┌─────▼─────┐ ┌──▼─────────────┐
-           │ Stellar Testnet│ │ Supabase  │ │ AI providers   │
-           │ USDC + Horizon │ │ private   │ │ Groq / Gemini  │
-           └────────────────┘ │ app data  │ └────────────────┘
-                              └───────────┘
-                        │
-      ┌─────────────────┼─────────────────────────────┐
-      │                 │                             │
-┌─────▼──────┐   ┌──────▼──────┐               ┌──────▼──────┐
-│ Kotani Pay │   │ Africa's    │               │ MoneyGram   │
-│ sandbox    │   │ Talking     │               │ demo flow   │
-└────────────┘   │ sandbox     │               └─────────────┘
-                 └─────────────┘
+Expo / React Native Web app
+          │ signed session
+          ▼
+Express + TypeScript API
+   ├── Stellar Testnet + Horizon + Test USDC
+   ├── Supabase / PostgreSQL
+   ├── Groq / Gemini / Sunbird AI
+   ├── Africa's Talking Sandbox
+   ├── Kotani Pay Sandbox or demo mode
+   └── MoneyGram Ramps Testnet demonstration
 ```
+
+## Prototype boundaries
+
+HomeWard is a hackathon prototype. This table intentionally separates what works now from what requires regulated partner approval.
+
+| Capability | Current state |
+| --- | --- |
+| Accounts, trusted recipients, Goals, Circles, history, receipts, notifications, and AI guardrails | Implemented in the prototype |
+| Wallet provisioning, Test USDC transfers, and transaction proof | Real Stellar **Testnet** transactions |
+| Africa’s Talking SMS | Sandbox only; messages appear in the registered Africa’s Talking simulator |
+| Kotani Pay payout | Sandbox/demo integration; no promise of live UGX settlement |
+| MoneyGram cash-in | Transparent Testnet demonstration; a live UAE programme requires MoneyGram approval and allowlisting |
+| Transak checkout | Optional hosted integration; availability and supported payment methods depend on Transak approval and market support |
+| AED collection, KYC/AML, custody, FX, and live Uganda mobile-money payout | Require licensed, regulated partners before any public launch |
+
+HomeWard is therefore a working Testnet product demonstration and partner-ready experience layer, **not a licensed remittance service**.
 
 ## Technology
 
-| Layer | Technology |
+| Layer | Stack |
 | --- | --- |
-| Client | React Native, Expo, TypeScript, React Native Web |
-| Backend | Node.js, Express, TypeScript |
+| Client | React Native, Expo, React Native Web, TypeScript |
+| API | Node.js, Express, TypeScript |
 | Blockchain | `@stellar/stellar-sdk`, Stellar Testnet, Horizon, Test USDC |
 | Data | Supabase / PostgreSQL |
-| AI | Groq and Google Gemini |
+| AI | Google Gemini, Groq, Sunbird AI |
 | Messaging | Africa’s Talking Sandbox |
-| Payout/cash-in prototype | Kotani Pay Sandbox and MoneyGram Ramps demonstration flow |
-| Deployment | Vercel and Railway |
+| Funding and payout demos | MoneyGram Ramps demo flow, Transak hosted checkout, Kotani Pay Sandbox |
+| Deployment | Vercel frontend, Railway backend |
 
----
-
-## Run it locally
+## Run locally
 
 ### Prerequisites
 
 - Node.js 20+
 - A Supabase project
-- Optional: Groq, Gemini, Africa’s Talking, Kotani, Transak, and MoneyGram sandbox credentials
+- Optional partner/API credentials for AI, SMS, Kotani, Transak, and MoneyGram demo capabilities
 
-### 1. Clone and install
+### Install
 
 ```bash
 git clone https://github.com/RockieRaheem/HomeWard.git
 cd HomeWard/twala-app
-
 npm install
 cd backend && npm install
 ```
 
-### 2. Configure Supabase
+### Configure Supabase
 
-For a **new** Supabase project, run:
+For a new project, run `twala-app/backend/supabase-schema.sql` in the Supabase SQL editor.
 
-```text
-backend/supabase-schema.sql
-```
+For an existing HomeWard database, run the idempotent `twala-app/backend/supabase-user-isolation.sql` migration instead.
 
-For an existing HomeWard database, run the idempotent migration instead:
+### Configure environment variables
 
-```text
-backend/supabase-user-isolation.sql
-```
+Copy the backend example file:
 
-### 3. Configure the backend
-
-```bash
-cd backend
+```powershell
+cd twala-app/backend
 Copy-Item .env.example .env
 ```
 
-Set at least the following values in `backend/.env`:
+Set at least:
 
 ```env
+AUTH_TOKEN_SECRET=a-random-secret-with-at-least-32-characters
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-project-key
-AUTH_TOKEN_SECRET=use-a-long-random-secret-here
+SUPABASE_ANON_KEY=your-supabase-anon-key
 STELLAR_NETWORK=TESTNET
+STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
 ```
 
-For a physical phone, create `twala-app/.env`:
+For a physical device on your local network, create `twala-app/.env`:
 
 ```env
 EXPO_PUBLIC_API_URL=http://YOUR_COMPUTER_LAN_IP:4000/api
 ```
 
-### 4. Start the services
+Never commit `.env` files or expose server-side keys in Expo variables.
 
-Terminal one:
+### Start the app
 
 ```bash
+# terminal 1
 cd twala-app/backend
 npm run dev
-```
 
-Terminal two:
-
-```bash
+# terminal 2
 cd twala-app
-npx expo start
+npm start
 ```
 
-Open the web client, scan the Expo QR code, or use the deployed demo.
+Use the Expo QR code for a phone on the same network, run the web target, or open the deployed demo.
 
----
+## Security and production path
 
-## Security notes
+This codebase is for a hackathon demonstration. Do not use Testnet keys, sandbox API keys, demo PINs, or prototype data handling for a live financial product.
 
-This repository is a hackathon prototype. Never use Testnet credentials, demo PINs, or sandbox partner keys in a public financial product.
-
-Before handling real customer funds, HomeWard needs a production security and compliance programme: regulated funding/payout partners, formal KYC/AML controls, hardened authentication, rate limiting, encrypted key management or custody/MPC, restricted CORS, database row-level security, security review, and monitoring.
-
----
+Before handling customer money, HomeWard needs regulated funding and payout partners, KYC/AML operations, hardened authentication, rate limiting, secure key custody or MPC, restrictive CORS, database row-level security, audited encryption, monitoring, incident response, and an independent security review.
 
 ## Team
 
-- **Raheem Kamwanga**
-- **Kisakye Kabazaile**
-- **Sunday Lugai**
+- Raheem Kamwanga
+- Kisakye Kabazaile
+- Sunday Lugai
 
 Built for Blockchain DevFest Kampala 2026.
