@@ -138,6 +138,11 @@ export interface ChatSessionData {
   lastMessageAt: string;
 }
 
+export interface HomewardLanguage {
+  code: 'eng' | 'lug' | 'ach' | 'teo' | 'lgg' | 'nyn' | 'swa';
+  name: string;
+}
+
 export interface AppNotificationData {
   id: string;
   title: string;
@@ -332,8 +337,10 @@ export const chatApi = {
   deleteSession: (id: string) =>
     request<{ success: boolean }>(`/chat/sessions/${id}`, { method: 'DELETE' }),
 
-  send: (sessionId: string, message: string, userName?: string, userPhone?: string) =>
-    request<{ messages: ChatMsg[]; navigate?: NavigateAction }>(`/chat/sessions/${sessionId}/send`, { method: 'POST', body: JSON.stringify({ message, userName, userPhone }) }, 25000),
+  send: (sessionId: string, message: string, userName?: string, userPhone?: string, language: HomewardLanguage['code'] = 'eng') =>
+    request<{ messages: ChatMsg[]; navigate?: NavigateAction; translationAvailable: boolean }>(`/chat/sessions/${sessionId}/send`, { method: 'POST', body: JSON.stringify({ message, userName, userPhone, language }) }, 30000),
+
+  languages: () => request<{ configured: boolean; languages: HomewardLanguage[] }>('/chat/languages'),
 
   // Legacy (keep for backward compat)
   list: () =>

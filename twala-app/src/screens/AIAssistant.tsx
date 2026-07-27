@@ -2,12 +2,17 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
-import { chatApi, isBackendOnline, notifyChange, type ChatMsg, type ChatSessionData, type NavigateAction } from '../services/api';
+import { chatApi, isBackendOnline, notifyChange, type ChatMsg, type ChatSessionData, type NavigateAction, type HomewardLanguage } from '../services/api';
 import DismissKeyboard from '../components/DismissKeyboard';
 import { createVoiceRecognition, isVoiceRecognitionSupported, type VoiceRecognition } from '../services/voiceRecognition';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
+const HOMEWARD_LANGUAGES: HomewardLanguage[] = [
+  { code: 'eng', name: 'English' }, { code: 'lug', name: 'Luganda' }, { code: 'ach', name: 'Acholi' },
+  { code: 'teo', name: 'Ateso' }, { code: 'lgg', name: 'Lugbara' }, { code: 'nyn', name: 'Runyankole' }, { code: 'swa', name: 'Swahili' },
+];
+const BROWSER_VOICE_LOCALES: Record<HomewardLanguage['code'], string> = { eng: 'en-UG', lug: 'lg-UG', ach: 'en-UG', teo: 'en-UG', lgg: 'en-UG', nyn: 'en-UG', swa: 'sw-KE' };
 
 // ---------------------------------------------------------------------------
 // Typing indicator
@@ -230,6 +235,9 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [voiceHint, setVoiceHint] = useState<string | null>(null);
+  const [language, setLanguage] = useState<HomewardLanguage['code']>('eng');
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [sunbirdEnabled, setSunbirdEnabled] = useState(false);
 
   const listRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
@@ -246,7 +254,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   useEffect(() => { scrollToEnd(); }, [messages, isTyping, scrollToEnd]);
 
   const loadSessions = useCallback(async () => {
-    const [sessionsRes, sugRes] = await Promise.all([chatApi.listSessions(), chatApi.suggestions()]);
+    const [sessionsRes, sugRes, languageRes] = await Promise.all([chatApi.listSessions(), chatApi.suggestions(), chatApi.languages()]);
     if (sessionsRes.success && sessionsRes.data) {
       setSessions(sessionsRes.data);
       if (sessionsRes.data.length > 0 && !activeSessionId) {
@@ -260,6 +268,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
       }
     }
     if (sugRes.success && sugRes.data) setSuggestions(sugRes.data);
+    if (languageRes.success && languageRes.data) setSunbirdEnabled(languageRes.data.configured);
     setLoading(false);
   }, []);
 
@@ -331,7 +340,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
     const optimistic: ChatMsg = { role: 'user', content: userMsg, timestamp: new Date().toISOString() };
     setMessages((prev) => [...prev, optimistic]);
 
-    const [chatRes, sugRes] = await Promise.all([chatApi.send(sid, userMsg, userName, userPhone), chatApi.suggestions()]);
+    const [chatRes, sugRes] = await Promise.all([chatApi.send(sid, userMsg, userName, userPhone, language), chatApi.suggestions()]);
     if (chatRes.success && chatRes.data) {
       const { messages: msgs, navigate } = chatRes.data as any;
       if (Array.isArray(msgs) && msgs.length > 0) { setMessages(msgs); notifyChange(); }
@@ -340,6 +349,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
         if (nav.screen === 'GoalDetail' && nav.goalId && onNavigateGoal) onNavigateGoal(nav.goalId);
         else if (onNavigate) onNavigate(nav.screen);
       }
+      if (language !== 'eng' && !chatRes.data.translationAvailable) setVoiceHint('Sunbird translation is not configured yet, so HomeWard replied in English.');
       const sessionsRes = await chatApi.listSessions();
       if (sessionsRes.success && sessionsRes.data) setSessions(sessionsRes.data);
     } else {
@@ -363,6 +373,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
 
     const recognition = createVoiceRecognition();
     if (!recognition) return;
+    recognition.lang = BROWSER_VOICE_LOCALES[language];
     recognitionRef.current = recognition;
     setVoiceHint('Listening… speak naturally, then review your text before sending.');
     setIsListening(true);
@@ -513,6 +524,10 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
         <View style={styles.deleteOverlay}><View style={styles.deleteSheet}><View style={styles.deleteIcon}><MaterialCommunityIcons name="trash-can-outline" size={27} color={Colors.error} /></View><Text style={styles.deleteTitle}>Delete this chat?</Text><Text style={styles.deleteText}>“{deleteChatCandidate?.title}” and its messages will be permanently removed.</Text><View style={styles.deleteActions}><TouchableOpacity disabled={deletingChat} style={styles.deleteCancel} onPress={() => setDeleteChatCandidate(null)}><Text style={styles.deleteCancelText}>Keep chat</Text></TouchableOpacity><TouchableOpacity disabled={deletingChat} style={styles.deleteConfirm} onPress={confirmDeleteChat}>{deletingChat ? <ActivityIndicator size="small" color={Colors.onError} /> : <Text style={styles.deleteConfirmText}>Delete chat</Text>}</TouchableOpacity></View></View></View>
       </Modal>
 
+      <Modal visible={languageMenuOpen} transparent animationType="fade" onRequestClose={() => setLanguageMenuOpen(false)}>
+        <View style={styles.languageOverlay}><TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setLanguageMenuOpen(false)} /><View style={styles.languageSheet}><View style={styles.languageSheetHead}><View style={{ flex: 1 }}><Text style={styles.languageTitle}>Choose your language</Text><Text style={styles.languageSubtitle}>HomeWard Assistant uses Sunbird AI to understand and reply in Ugandan languages.</Text></View><TouchableOpacity onPress={() => setLanguageMenuOpen(false)}><MaterialCommunityIcons name="close" size={22} color={Colors.onSurfaceVariant} /></TouchableOpacity></View>{HOMEWARD_LANGUAGES.map((option) => <TouchableOpacity key={option.code} style={[styles.languageOption, language === option.code && styles.languageOptionSelected]} onPress={() => { setLanguage(option.code); setLanguageMenuOpen(false); }}><View style={styles.languageOptionIcon}><MaterialCommunityIcons name="translate" size={18} color={language === option.code ? Colors.onPrimary : Colors.primary} /></View><Text style={[styles.languageOptionText, language === option.code && { color: Colors.onPrimary }]}>{option.name}</Text>{language === option.code ? <MaterialCommunityIcons name="check" size={19} color={Colors.onPrimary} /> : null}</TouchableOpacity>)}{!sunbirdEnabled ? <View style={styles.languageNotice}><MaterialCommunityIcons name="information-outline" size={17} color={Colors.secondary} /><Text style={styles.languageNoticeText}>Sunbird is awaiting its server access token. English stays available until translation is connected.</Text></View> : <View style={styles.languageReady}><MaterialCommunityIcons name="check-circle-outline" size={17} color={Colors.primary} /><Text style={styles.languageReadyText}>Sunbird AI language support is connected.</Text></View>}</View></View>
+      </Modal>
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -526,9 +541,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
             )}
           </View>
         </View>
-        <TouchableOpacity style={styles.newChatButton} onPress={createNewSession} activeOpacity={0.7}>
-          <MaterialCommunityIcons name="plus" size={22} color={Colors.onPrimary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}><TouchableOpacity style={styles.languageButton} onPress={() => setLanguageMenuOpen(true)} activeOpacity={0.7}><MaterialCommunityIcons name="translate" size={18} color={Colors.primary} /><Text numberOfLines={1} style={styles.languageButtonText}>{HOMEWARD_LANGUAGES.find((option) => option.code === language)?.name || 'English'}</Text></TouchableOpacity><TouchableOpacity style={styles.newChatButton} onPress={createNewSession} activeOpacity={0.7}><MaterialCommunityIcons name="plus" size={22} color={Colors.onPrimary} /></TouchableOpacity></View>
       </View>
 
       {/* Chat */}
@@ -689,7 +702,23 @@ const styles = StyleSheet.create({
   headerInfo: { flex: 1 },
   headerTitle: { fontSize: Typography.headlineMd.fontSize, fontFamily: 'Montserrat', fontWeight: '600', color: Colors.primary },
   headerSessionTitle: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', color: Colors.onSurfaceVariant, marginTop: -2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  languageButton: { maxWidth: 112, height: 40, paddingHorizontal: 10, borderRadius: 20, backgroundColor: Colors.primaryFixed, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  languageButtonText: { fontFamily: 'Inter', fontSize: 10, fontWeight: '800', color: Colors.primary, flexShrink: 1 },
   newChatButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', ...Shadow.level1 },
+  languageOverlay: { flex: 1, backgroundColor: 'rgba(0,32,25,0.45)', justifyContent: 'flex-end' },
+  languageSheet: { backgroundColor: Colors.surfaceContainerLowest, borderTopLeftRadius: 25, borderTopRightRadius: 25, padding: 20, paddingBottom: 30 },
+  languageSheetHead: { flexDirection: 'row', justifyContent: 'space-between', gap: 14, marginBottom: 14 },
+  languageTitle: { fontFamily: 'Montserrat', fontWeight: '800', fontSize: 19, color: Colors.onSurface },
+  languageSubtitle: { fontFamily: 'Inter', fontSize: 12, lineHeight: 17, color: Colors.onSurfaceVariant, marginTop: 5, maxWidth: 290 },
+  languageOption: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 10, borderRadius: 13, marginTop: 4 },
+  languageOptionSelected: { backgroundColor: Colors.primary },
+  languageOptionIcon: { width: 33, height: 33, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.primaryFixed },
+  languageOptionText: { flex: 1, fontFamily: 'Inter', fontSize: 14, fontWeight: '800', color: Colors.onSurface },
+  languageNotice: { marginTop: 12, backgroundColor: Colors.secondaryContainer, borderRadius: 12, padding: 11, flexDirection: 'row', gap: 7 },
+  languageNoticeText: { flex: 1, fontFamily: 'Inter', fontSize: 11, lineHeight: 16, color: Colors.onSecondaryContainer },
+  languageReady: { marginTop: 12, backgroundColor: Colors.primaryFixed, borderRadius: 12, padding: 11, flexDirection: 'row', gap: 7 },
+  languageReadyText: { flex: 1, fontFamily: 'Inter', fontSize: 11, lineHeight: 16, color: Colors.primary },
   listContent: { paddingHorizontal: Spacing.containerPaddingMobile, paddingBottom: 12 },
   dateMarker: { alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surfaceContainerHighest + '80', paddingHorizontal: 16, paddingVertical: 6, borderRadius: BorderRadius.full, marginVertical: Spacing.gutter },
   dateText: { fontSize: Typography.labelSm.fontSize, fontFamily: 'Inter', fontWeight: '500', color: Colors.onSurfaceVariant },

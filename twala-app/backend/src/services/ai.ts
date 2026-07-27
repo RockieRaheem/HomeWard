@@ -6,6 +6,7 @@ import { sendTransferNotificationAsync } from './sms.js';
 import { notifyChange } from './events.js';
 import config from '../config.js';
 import type { ChatMessage, AiContext } from '../types/index.js';
+import * as sunbird from './sunbird.js';
 
 // Models in priority order (best function-calling first, then fallbacks)
 // Only actively supported models — confirmed via Groq docs as of July 2026
@@ -599,10 +600,17 @@ console.log(`  AI      : ${process.env.GEMINI_API_KEY ? 'Gemini ✓ (2.0 Flash)'
 // Public API — never throws
 // ---------------------------------------------------------------------------
 
-export async function chat(userMessage: string, sessionId?: string, userName?: string, userPhone?: string): Promise<{ messages: ChatMessage[]; navigate: { screen: string; goalId?: string } | null }> {
+export async function chat(userMessage: string, sessionId?: string, userName?: string, userPhone?: string, language: sunbird.SunbirdLanguage = 'eng'): Promise<{ messages: ChatMessage[]; navigate: { screen: string; goalId?: string } | null; translationAvailable: boolean }> {
   _pendingNavigate = null;
 
   try { await db.addChatMessage({ role: 'user', content: userMessage, sessionId }); } catch (e) { console.error('Failed to save user msg:', e); }
+
+  let workingMessage = userMessage;
+  const translationAvailable = sunbird.isSunbirdConfigured();
+  const preserveCommand = /\bconfirm\s+(send|higher\s+amount|unusual\s+amount|create\s+goal)\b/i.test(userMessage);
+  if (language !== 'eng' && translationAvailable && !preserveCommand) {
+    try { workingMessage = await sunbird.translate(userMessage, language, 'eng'); } catch (error) { console.warn('Sunbird input translation failed:', error); }
+  }
 
   const ctx = await buildContext(userName, userPhone);
   let history: ChatMessage[] = [];
@@ -611,11 +619,11 @@ export async function chat(userMessage: string, sessionId?: string, userName?: s
   let reply: string | null = null;
 
   if (process.env.GROQ_API_KEY) {
-    try { reply = await callGroq(userMessage, ctx, history); } catch (e) { console.error('Groq exception:', e); }
+    try { reply = await callGroq(workingMessage, ctx, history); } catch (e) { console.error('Groq exception:', e); }
   }
 
   if (!reply && process.env.GEMINI_API_KEY) {
-    try { reply = await callGemini(userMessage, ctx, history); } catch (e) { console.error('Gemini exception:', e); }
+    try { reply = await callGemini(workingMessage, ctx, history); } catch (e) { console.error('Gemini exception:', e); }
   }
 
   if (!reply) {
@@ -624,11 +632,14 @@ export async function chat(userMessage: string, sessionId?: string, userName?: s
   }
 
   reply = cleanAssistantOutput(reply);
+  if (language !== 'eng' && translationAvailable && reply) {
+    try { reply = await sunbird.translate(reply, 'eng', language); } catch (error) { console.warn('Sunbird output translation failed:', error); }
+  }
   if (!reply) reply = 'I’m ready to help. Please ask your question again.';
   try { await db.addChatMessage({ role: 'assistant', content: reply, sessionId }); } catch (e) { console.error('Failed to save reply:', e); }
 
   let messages: ChatMessage[] = [];
   try { messages = await db.getChatMessages(sessionId); } catch (e) { console.error('Failed to get messages:', e); }
 
-  return { messages, navigate: _pendingNavigate };
+  return { messages, navigate: _pendingNavigate, translationAvailable };
 }

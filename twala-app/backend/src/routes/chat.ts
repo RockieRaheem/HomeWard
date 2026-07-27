@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as ai from '../services/ai.js';
 import * as db from '../services/database.js';
+import * as sunbird from '../services/sunbird.js';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.delete('/sessions/:id', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 router.post('/sessions/:id/send', async (req, res) => {
-  const { message, userName, userPhone } = req.body;
+  const { message, userName, userPhone, language = 'eng' } = req.body;
   const sessionId = req.params.id;
 
   if (!message || !message.trim()) {
@@ -65,12 +66,17 @@ router.post('/sessions/:id/send', async (req, res) => {
   }
 
   try {
-    const { messages, navigate } = await ai.chat(message.trim(), sessionId, userName, userPhone);
-    res.json({ success: true, data: { messages, navigate } });
+    if (!sunbird.isSunbirdLanguage(language)) return res.status(400).json({ success: false, message: 'Unsupported HomeWard language' });
+    const { messages, navigate, translationAvailable } = await ai.chat(message.trim(), sessionId, userName, userPhone, language);
+    res.json({ success: true, data: { messages, navigate, translationAvailable } });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     res.status(500).json({ success: false, message: msg });
   }
+});
+
+router.get('/languages', async (_req, res) => {
+  res.json({ success: true, data: { configured: sunbird.isSunbirdConfigured(), languages: sunbird.SUNBIRD_LANGUAGES } });
 });
 
 // ---------------------------------------------------------------------------
