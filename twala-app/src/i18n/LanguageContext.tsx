@@ -20,6 +20,9 @@ const LUGANDA: Record<string, string> = {
   'Your goals': 'Ebigendererwa byo', 'See all': 'Laba byonna', 'Recent activity': 'Ebikoleddwa gye buvuddeko', 'View history': 'Laba ebyafaayo', 'Today’s exchange rate': 'Omuwendo gw’ensimbi ogwa leero',
   'Edit details': 'Kyusa ebikwata ku ggwe', 'My receipts': 'Obujulizi bwange', 'HomeWard Circles': 'Ebibiina bya HomeWard', 'Sign out': 'Fuluma',
   'HomeWard': 'HomeWard', 'New chat': 'Emboozi empya', 'Chats': 'Emboozi', 'How can I help you?': 'Nnyinza nkuyambe ntya?', 'Send Money': 'Weereza ssente', 'Savings': 'Kutereka',
+  'HOME PROJECTS': 'Pulojekiti ez’awaka', 'MONEY MOVEMENT': 'Entambuza y’ensimbi', 'Secured on Stellar': 'Kikuumiddwa ku Stellar',
+  'Recipient Details': 'Ebikwata ku afuna ssente', 'Trusted recipients': 'Abafuna ssente be weesiga', 'Confirm & send': 'Kakasa era oweereze',
+  'Create Circle': 'Tonda ekibiina', 'Your Circles': 'Ebibiina byo', 'Family plans, together': 'Enteekateeka z’amaka, awamu',
 };
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {

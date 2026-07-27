@@ -147,7 +147,7 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, onSignOut, o
         </View>
 
         <View style={styles.welcome}>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
+          <Text style={styles.greeting}>{t(getGreeting())}</Text>
           <Text style={styles.name}>{user?.name?.split(' ')[0] || 'there'} <Text style={styles.wave}>👋</Text></Text>
           <Text style={styles.subtitle}>{t('Everything you send home, in one clear view.')}</Text>
         </View>
