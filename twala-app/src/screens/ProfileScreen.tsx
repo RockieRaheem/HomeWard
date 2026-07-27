@@ -83,7 +83,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
         <View style={styles.brand}>
           <Image source={HOMEWARD_LOGO} style={styles.logoCircle} accessibilityLabel="HomeWard logo" />
           <Text style={styles.brandName}>HomeWard</Text>
-          <Text style={styles.tagline}>Send home with proof it reached the right hands.</Text>
+          <Text style={styles.tagline}>{t('Send home. Stay connected.')}</Text>
         </View>
 
         <View style={styles.card}>

@@ -4,7 +4,7 @@
 
 <h1 align="center">HomeWard</h1>
 
-<p align="center"><strong>Send home with proof it reached the right hands.</strong></p>
+<p align="center"><strong>Send home. Stay connected.</strong></p>
 
 <p align="center">
   <a href="https://homeward-staging.vercel.app/">Live demo</a> ·

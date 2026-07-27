@@ -13,7 +13,7 @@ const STORAGE_KEY = 'homeward-language';
 const LUGANDA: Record<string, string> = {
   'Dashboard': 'Awaka', 'Goals': 'Ebigendererwa', 'Assistant': 'Muyambi', 'Transfer': 'Weereza', 'History': 'Ebyafaayo',
   'Choose your language': 'Londa olulimi lwo', 'This choice stays with HomeWard on this device.': 'Olulimi luno lujja kusigala mu HomeWard ku kyuma kino.',
-  'Welcome Back': 'Kaale, mukomye', 'Set up your profile to start sending money': 'Teekateeka ebikwata ku ggwe otandike okuweereza ssente.', 'Enter your PIN to continue': 'Wandiika PIN yo okugenda mu maaso.',
+  'Welcome Back': 'Tusanyuse okulaba neera', 'Send home. Stay connected.': 'Weereza awaka. Sigala nga muli wamu.', 'Set up your profile to start sending money': 'Teekateeka ebikwata ku ggwe otandike okuweereza ssente.', 'Enter your PIN to continue': 'Wandiika PIN yo okugenda mu maaso.',
   'Full Name': 'Amannya amatuufu', 'Phone Number (e.g. +256712345678)': 'Namba y’essimu (ng’ekyokulabirako +256712345678)', 'Create PIN (4-6 digits)': 'Tonda PIN (ennamba 4-6)', 'Confirm PIN': 'Kakasa PIN', 'Create Account': 'Ggulawo akawunti', 'Log In': 'Yingira', 'Already have an account? Log in': 'Olina akawunti dda? Yingira', "Don't have an account? Create one": 'Tolina akawunti? Ggulawo emu',
   'Good morning': 'Wasuze otya', 'Good afternoon': 'Osiibye otya', 'Good evening': 'Osiibye otya', 'Everything you send home, in one clear view.': 'Byonna by’oweereza awaka mu ndabika emu etegeerekeka.',
   'AVAILABLE TO SEND': 'SSENTE EZIRIWO OKUWEEREZA', 'USDC': 'USDC', 'Send money': 'Weereza ssente', 'Cash in': 'Teeka ssente', 'Ask HomeWard': 'Buuza HomeWard', 'Circles': 'Ebibiina',
