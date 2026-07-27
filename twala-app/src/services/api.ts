@@ -342,6 +342,12 @@ export const chatApi = {
 
   languages: () => request<{ configured: boolean; languages: HomewardLanguage[] }>('/chat/languages'),
 
+  transcribe: (audioBase64: string, mimeType: string, language: HomewardLanguage['code']) =>
+    request<{ text: string }>('/chat/transcribe', { method: 'POST', body: JSON.stringify({ audioBase64, mimeType, language }) }, 40000),
+
+  speech: (text: string, language: HomewardLanguage['code']) =>
+    request<{ audioUrl: string; expiresAt?: string }>('/chat/speech', { method: 'POST', body: JSON.stringify({ text, language }) }, 50000),
+
   // Legacy (keep for backward compat)
   list: () =>
     request<ChatMsg[]>('/chat'),

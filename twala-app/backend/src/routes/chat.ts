@@ -79,6 +79,25 @@ router.get('/languages', async (_req, res) => {
   res.json({ success: true, data: { configured: sunbird.isSunbirdConfigured(), languages: sunbird.SUNBIRD_LANGUAGES } });
 });
 
+router.post('/transcribe', async (req, res) => {
+  try {
+    const { audioBase64, mimeType, language } = req.body;
+    if (!sunbird.isSunbirdLanguage(language) || !audioBase64 || typeof audioBase64 !== 'string') return res.status(400).json({ success: false, message: 'Language and recorded audio are required' });
+    if (!sunbird.isSunbirdConfigured()) return res.status(503).json({ success: false, message: 'Sunbird speech recognition is not configured' });
+    const text = await sunbird.transcribe(audioBase64, String(mimeType || 'audio/webm'), language);
+    res.json({ success: true, data: { text } });
+  } catch (err) { res.status(502).json({ success: false, message: err instanceof Error ? err.message : String(err) }); }
+});
+
+router.post('/speech', async (req, res) => {
+  try {
+    const { text, language } = req.body;
+    if (!sunbird.isSunbirdLanguage(language) || !text?.trim()) return res.status(400).json({ success: false, message: 'Language and text are required' });
+    if (!sunbird.isSunbirdConfigured()) return res.status(503).json({ success: false, message: 'Sunbird text-to-speech is not configured' });
+    res.json({ success: true, data: await sunbird.synthesize(text, language) });
+  } catch (err) { res.status(502).json({ success: false, message: err instanceof Error ? err.message : String(err) }); }
+});
+
 // ---------------------------------------------------------------------------
 // Existing: full history, suggestions, delete-all (backward compat)
 // ---------------------------------------------------------------------------

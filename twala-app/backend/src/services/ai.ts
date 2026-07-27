@@ -626,13 +626,19 @@ export async function chat(userMessage: string, sessionId?: string, userName?: s
     try { reply = await callGemini(workingMessage, ctx, history); } catch (e) { console.error('Gemini exception:', e); }
   }
 
+  // Sunflower is intentionally a conversation-only fallback. It receives no
+  // HomeWard tools, so it cannot initiate a payment or modify user records.
+  if (!reply && language !== 'eng' && translationAvailable) {
+    try { reply = await sunbird.converse(userMessage, language); } catch (error) { console.warn('Sunbird conversation failed:', error); }
+  }
+
   if (!reply) {
     reply = "I'm here to help! You can ask me to send money to Uganda, create or manage savings goals, check your balance, or navigate to any screen in the app. What would you like to do?";
     console.warn('  AI: all providers exhausted, using fallback');
   }
 
   reply = cleanAssistantOutput(reply);
-  if (language !== 'eng' && translationAvailable && reply) {
+  if (language !== 'eng' && translationAvailable && reply && (process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY)) {
     try { reply = await sunbird.translate(reply, 'eng', language); } catch (error) { console.warn('Sunbird output translation failed:', error); }
   }
   if (!reply) reply = 'I’m ready to help. Please ask your question again.';

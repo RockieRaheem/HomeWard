@@ -238,10 +238,15 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   const [language, setLanguage] = useState<HomewardLanguage['code']>('eng');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [sunbirdEnabled, setSunbirdEnabled] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
 
   const listRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
   const recognitionRef = useRef<VoiceRecognition | null>(null);
+  const recorderRef = useRef<any>(null);
+  const recorderStreamRef = useRef<any>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollToEnd = useCallback(() => {
     if (listRef.current && messages.length > 0) {
@@ -274,7 +279,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
 
   useEffect(() => { loadSessions(); }, []);
 
-  useEffect(() => () => recognitionRef.current?.stop(), []);
+  useEffect(() => () => { recognitionRef.current?.stop(); if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current); recorderStreamRef.current?.getTracks?.().forEach((track: any) => track.stop()); }, []);
 
   const loadSessionIntoState = async (id: string) => {
     setActiveSessionId(id);
@@ -360,7 +365,52 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
     inputRef.current?.blur();
   };
 
-  const toggleVoiceInput = () => {
+  const stopSunbirdRecording = () => {
+    if (recordingTimerRef.current) clearTimeout(recordingTimerRef.current);
+    const recorder = recorderRef.current;
+    if (recorder?.state === 'recording') recorder.stop();
+  };
+
+  const startSunbirdRecording = async (): Promise<boolean> => {
+    const BrowserMediaRecorder = (globalThis as any).MediaRecorder;
+    if (Platform.OS !== 'web' || !BrowserMediaRecorder || !navigator.mediaDevices?.getUserMedia) return false;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const chunks: Blob[] = [];
+      const recorder = new BrowserMediaRecorder(stream, BrowserMediaRecorder.isTypeSupported?.('audio/webm') ? { mimeType: 'audio/webm' } : undefined);
+      recorderRef.current = recorder; recorderStreamRef.current = stream;
+      recorder.ondataavailable = (event: any) => { if (event.data?.size) chunks.push(event.data); };
+      recorder.onstop = async () => {
+        recorderStreamRef.current?.getTracks?.().forEach((track: any) => track.stop());
+        recorderStreamRef.current = null; recorderRef.current = null; setIsListening(false);
+        if (!chunks.length) return setVoiceHint('No audio was captured. Please try again.');
+        setTranscribing(true); setVoiceHint('Sunbird AI is transcribing your voice…');
+        try {
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          const dataUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(blob); });
+          const result = await chatApi.transcribe(dataUrl.split(',')[1] || '', blob.type || 'audio/webm', language);
+          if (!result.success || !result.data?.text) throw new Error(result.message || 'Sunbird could not understand that recording');
+          setMessage((current) => current ? `${current} ${result.data.text}` : result.data.text);
+          setVoiceHint('Voice captured by Sunbird. Review the text, then tap send.');
+        } catch (error: any) { setVoiceHint(error?.message || 'Sunbird could not transcribe the recording. Please try again.'); }
+        finally { setTranscribing(false); }
+      };
+      recorder.start(); setIsListening(true); setVoiceHint('Listening with Sunbird AI… tap again when you finish.');
+      recordingTimerRef.current = setTimeout(() => { setVoiceHint('Recording stopped after 45 seconds. Transcribing now…'); stopSunbirdRecording(); }, 45_000);
+      return true;
+    } catch (error: any) { setVoiceHint(error?.name === 'NotAllowedError' ? 'Microphone access was blocked. Allow it in browser settings and try again.' : 'Could not start recording. Please try again.'); return true; }
+  };
+
+  const speakResponse = async (text: string, id: string) => {
+    if (!sunbirdEnabled) return setVoiceHint('Add SUNBIRD_API_TOKEN on Railway to hear HomeWard in your selected language.');
+    if (Platform.OS !== 'web' || !(globalThis as any).Audio) return setVoiceHint('Spoken replies are available in the deployed web app.');
+    setSpeakingMessageId(id); setVoiceHint('Sunbird AI is preparing a spoken reply…');
+    try { const response = await chatApi.speech(text, language); if (!response.success || !response.data?.audioUrl) throw new Error(response.message || 'Could not create speech'); const audio = new (globalThis as any).Audio(response.data.audioUrl); audio.onended = () => setSpeakingMessageId(null); audio.onerror = () => { setSpeakingMessageId(null); setVoiceHint('The spoken reply could not play.'); }; await audio.play(); setVoiceHint(null); } catch (error: any) { setSpeakingMessageId(null); setVoiceHint(error?.message || 'Could not create a spoken reply.'); }
+  };
+
+  const toggleVoiceInput = async () => {
+    if (recorderRef.current?.state === 'recording') return stopSunbirdRecording();
+    if (sunbirdEnabled && await startSunbirdRecording()) return;
     if (Platform.OS !== 'web' || !isVoiceRecognitionSupported()) {
       Alert.alert('Voice input unavailable', 'Use HomeWard voice input in Chrome or Edge on a mobile device, then allow microphone access.');
       return;
@@ -437,9 +487,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
         <View style={msgStyles.aiBlock}>
           <View style={msgStyles.aiMessage}>
             {renderRichText(item.content)}
-            <Text style={msgStyles.aiMsgTime}>
-              {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
+            <View style={msgStyles.aiMessageFooter}><Text style={msgStyles.aiMsgTime}>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text><TouchableOpacity style={msgStyles.speakButton} onPress={() => speakResponse(item.content, item.id || item.timestamp)} accessibilityLabel="Listen to this answer"><MaterialCommunityIcons name={speakingMessageId === (item.id || item.timestamp) ? 'volume-high' : 'volume-medium'} size={16} color={Colors.primary} /></TouchableOpacity></View>
           </View>
         </View>
       </View>
@@ -658,7 +706,7 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
               accessibilityLabel={isListening ? 'Stop voice input' : 'Start voice input'}
               style={[styles.voiceButton, isListening && styles.voiceButtonListening]}
               onPress={toggleVoiceInput}
-              disabled={isTyping}
+              disabled={isTyping || transcribing}
             >
               <MaterialCommunityIcons name={isListening ? 'stop' : 'microphone-outline'} size={22} color={isListening ? Colors.onError : Colors.primary} />
             </TouchableOpacity>
@@ -789,6 +837,8 @@ const msgStyles = StyleSheet.create({
   aiAvatarSmall: { width: 34, height: 34, borderRadius: 17, backgroundColor: Colors.secondaryContainer, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   aiBlock: { flex: 1, gap: 8 },
   aiMessage: { backgroundColor: Colors.surfaceContainerLowest, padding: Spacing.stackMd, borderRadius: 20, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.outlineVariant + '1A', ...Shadow.level1 },
-  aiMsgTime: { fontSize: 10, color: Colors.onSurfaceVariant, opacity: 0.6, textAlign: 'right', marginTop: 6 },
+  aiMessageFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  aiMsgTime: { fontSize: 10, color: Colors.onSurfaceVariant, opacity: 0.6 },
+  speakButton: { width: 29, height: 29, borderRadius: 15, backgroundColor: Colors.primaryFixed, alignItems: 'center', justifyContent: 'center' },
   typingBubble: { backgroundColor: Colors.surfaceContainerLowest, borderRadius: 20, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.outlineVariant + '1A', paddingHorizontal: 16, ...Shadow.level1 },
 });
