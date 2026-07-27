@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { transferApi, moneygramApi, ratesApi, goalsApi, recipientsApi, getPendingGoalId, setPendingGoalId, type GoalData, type StellarProof, type RecipientData, type RecipientPassportData } from '../services/api';
 import SendSuccess from '../components/SendSuccess';
+import { useLanguage } from '../i18n/LanguageContext';
 
 type TransferMode = 'send' | 'deposit';
 type CashInStep = 'identity' | 'location' | 'review' | 'processing' | 'success' | null;
@@ -274,6 +275,7 @@ interface Props {
 }
 
 export default function SmartTransfer({ user }: Props = {}) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<TransferMode>('send');
   const [selectedPurpose, setSelectedPurpose] = useState<PurposeOption>(PURPOSES[1]);
   const [showPicker, setShowPicker] = useState(false);
@@ -371,19 +373,19 @@ export default function SmartTransfer({ user }: Props = {}) {
     recipientsApi.passport(recipient.id).then((response) => { if (response.success && response.data) setRecipientPassport(response.data); }).catch(() => setRecipientPassport(null));
   };
   const saveRecipient = async () => {
-    if (!recipientName.trim() || !/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert('Recipient details', 'Enter a full name and valid international phone number before saving.');
+    if (!recipientName.trim() || !/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert(t('Recipient details'), t('Enter a full name and valid international phone number before saving.'));
     const result = selectedRecipientId ? await recipientsApi.update(selectedRecipientId, recipientPayload()) : await recipientsApi.create(recipientPayload());
-    if (!result.success || !result.data) return Alert.alert('Could not save recipient', result.message || 'Please try again.');
+    if (!result.success || !result.data) return Alert.alert(t('Could not save recipient'), result.message || t('Please try again.'));
     setRecipients((current) => selectedRecipientId ? current.map((item) => item.id === result.data.id ? result.data : item) : [result.data, ...current]);
     setSelectedRecipientId(result.data.id);
-    Alert.alert('Recipient saved', `${result.data.fullName} is ready for future transfers.`);
+    Alert.alert(t('Recipient saved'), `${result.data.fullName} ${t('is ready for future transfers.')}`);
   };
   const removeRecipient = () => {
     if (!selectedRecipientId) return;
     const recipient = recipients.find((item) => item.id === selectedRecipientId);
-    Alert.alert('Remove saved recipient?', `${recipient?.fullName || 'This recipient'} will be removed from your private list.`, [
-      { text: 'Keep', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: async () => { const result = await recipientsApi.remove(selectedRecipientId); if (result.success) { setRecipients((items) => items.filter((item) => item.id !== selectedRecipientId)); setSelectedRecipientId(null); } else Alert.alert('Could not remove', result.message || 'Please try again.'); } },
+    Alert.alert(t('Remove saved recipient?'), `${recipient?.fullName || t('This recipient')} ${t('will be removed from your private list.')}`, [
+      { text: t('Keep'), style: 'cancel' },
+      { text: t('Remove'), style: 'destructive', onPress: async () => { const result = await recipientsApi.remove(selectedRecipientId); if (result.success) { setRecipients((items) => items.filter((item) => item.id !== selectedRecipientId)); setSelectedRecipientId(null); } else Alert.alert(t('Could not remove'), result.message || t('Please try again.')); } },
     ]);
   };
 
@@ -409,11 +411,11 @@ export default function SmartTransfer({ user }: Props = {}) {
 
   const handleSubmit = async (approved = false) => {
     if (mode === 'send') {
-      if (usdAmount < 10) return Alert.alert('Minimum 10 USDC', 'Enter at least 10 USDC to send.');
-      if (!quote) return Alert.alert('No quote', 'Unable to get exchange rate. Try again.');
-      if (!recipientName.trim()) return Alert.alert('Recipient Name', 'Enter the recipient name.');
-      if (!recipientPhone.trim()) return Alert.alert('Recipient Phone', 'A phone number is required for Mobile Money and SMS notification.');
-      if (!/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert('Invalid Phone', 'Use international format, for example +256712345678.');
+      if (usdAmount < 10) return Alert.alert(t('Minimum 10 USDC'), t('Enter at least 10 USDC to send.'));
+      if (!quote) return Alert.alert(t('No quote'), t('Unable to get exchange rate. Try again.'));
+      if (!recipientName.trim()) return Alert.alert(t('Recipient Name'), t('Enter the recipient name.'));
+      if (!recipientPhone.trim()) return Alert.alert(t('Recipient Phone'), t('A phone number is required for Mobile Money and SMS notification.'));
+      if (!/^\+[1-9]\d{7,14}$/.test(recipientPhone.trim())) return Alert.alert(t('Invalid Phone'), t('Use international format, for example +256712345678.'));
       if (!approved) { dismissKeyboard(); setShowSafeReview(true); return; }
       setSubmitting(true);
       // Safety timeout: force-stop loading if something goes wrong
@@ -558,7 +560,7 @@ export default function SmartTransfer({ user }: Props = {}) {
           <Image source={HOMEWARD_LOGO} style={styles.headerLogo} accessibilityLabel="HomeWard logo" />
           <View>
             <Text style={styles.headerBrand}>HomeWard</Text>
-            <Text style={styles.headerTitle}>Smart Transfer</Text>
+            <Text style={styles.headerTitle}>{t('Smart Transfer')}</Text>
           </View>
         </View>
         <View style={styles.headerRight}>
@@ -588,14 +590,14 @@ export default function SmartTransfer({ user }: Props = {}) {
                 onPress={() => switchMode('send')}
               >
                 <MaterialCommunityIcons name="send" size={18} color={mode === 'send' ? Colors.onPrimary : Colors.primary} />
-                <Text style={[styles.modeText, mode === 'send' && styles.modeTextActive]}>Send</Text>
+                <Text style={[styles.modeText, mode === 'send' && styles.modeTextActive]}>{t('Send')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modeButton, mode === 'deposit' && styles.modeButtonActive]}
                 onPress={() => switchMode('deposit')}
               >
                 <MaterialCommunityIcons name="download" size={18} color={mode === 'deposit' ? Colors.onPrimary : Colors.primary} />
-                <Text style={[styles.modeText, mode === 'deposit' && styles.modeTextActive]}>Deposit</Text>
+                <Text style={[styles.modeText, mode === 'deposit' && styles.modeTextActive]}>{t('Deposit')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -605,11 +607,11 @@ export default function SmartTransfer({ user }: Props = {}) {
                 1 USDC ≈ UGX {liveRate.toLocaleString()}
               </Text>
               <View style={styles.rateLiveDot} />
-              <Text style={styles.rateLiveLabel}>Live</Text>
+              <Text style={styles.rateLiveLabel}>{t('Live')}</Text>
             </View>
 
             <Animated.View style={[styles.amountCard, { transform: [{ scale: scaleAnim }] }]}>
-              <Text style={styles.amountLabel}>{mode === 'send' ? 'You Send' : 'Cash-in amount at MoneyGram'}</Text>
+              <Text style={styles.amountLabel}>{mode === 'send' ? t('You Send') : t('Cash-in amount at MoneyGram')}</Text>
               <View style={styles.amountRow}>
                 <Text style={styles.currencySign}>
                   {mode === 'send' ? '$' : fundingCurrency}
@@ -636,28 +638,28 @@ export default function SmartTransfer({ user }: Props = {}) {
 
             {mode === 'send' && quote && (
               <View style={styles.quoteCard}>
-                <Text style={styles.quoteTitle}>Transfer Breakdown</Text>
+                <Text style={styles.quoteTitle}>{t('Transfer Breakdown')}</Text>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Amount</Text>
+                  <Text style={styles.quoteLabel}>{t('Amount')}</Text>
                   <Text style={styles.quoteValue}>${quote.sendAmountUsdc.toFixed(2)} USDC</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Fee (0.5%)</Text>
+                  <Text style={styles.quoteLabel}>{t('Fee (0.5%)')}</Text>
                   <Text style={styles.quoteValue}>${quote.feeUsdc.toFixed(2)} USDC</Text>
                 </View>
                 <View style={styles.quoteDivider} />
                 <View style={styles.quoteRow}>
-                  <Text style={[styles.quoteLabel, { fontWeight: '700' }]}>Recipient Gets</Text>
+                  <Text style={[styles.quoteLabel, { fontWeight: '700' }]}>{t('Recipient Gets')}</Text>
                   <Text style={[styles.quoteValue, { color: Colors.primary, fontWeight: '700' }]}>
                     UGX {quote.receiveAmountUgx.toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Rate</Text>
+                  <Text style={styles.quoteLabel}>{t('Rate')}</Text>
                   <Text style={styles.quoteValue}>1 USDC = UGX {quote.rate.toLocaleString()}</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Delivery</Text>
+                  <Text style={styles.quoteLabel}>{t('Delivery')}</Text>
                   <Text style={styles.quoteValue}>{quote.estimatedArrival}</Text>
                 </View>
               </View>
@@ -665,22 +667,22 @@ export default function SmartTransfer({ user }: Props = {}) {
 
             {mode === 'deposit' && (
               <View style={styles.quoteCard}>
-                <Text style={styles.quoteTitle}>Cash in with MoneyGram</Text>
+                <Text style={styles.quoteTitle}>{t('Cash in with MoneyGram')}</Text>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Funding method</Text>
+                  <Text style={styles.quoteLabel}>{t('Funding method')}</Text>
                   <Text style={styles.quoteValue}>AED cash at MoneyGram</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>You fund</Text>
+                  <Text style={styles.quoteLabel}>{t('You fund')}</Text>
                   <Text style={styles.quoteValue}>AED {(parseFloat(amount.replace(/,/g, '')) || 0).toLocaleString()}</Text>
                 </View>
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Asset destination</Text>
+                  <Text style={styles.quoteLabel}>{t('Asset destination')}</Text>
                   <Text style={styles.quoteValue}>USDC on Stellar</Text>
                 </View>
                 <View style={styles.quoteDivider} />
                 <View style={styles.quoteRow}>
-                  <Text style={styles.quoteLabel}>Status</Text>
+                  <Text style={styles.quoteLabel}>{t('Status')}</Text>
                   <Text style={styles.quoteValue}>{moneygramStatus?.configured ? `MoneyGram ${moneygramStatus.environment}` : 'Testnet proof available'}</Text>
                 </View>
               </View>
@@ -700,18 +702,18 @@ export default function SmartTransfer({ user }: Props = {}) {
             {loading && <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />}
 
             <View style={styles.recipientCard}>
-              <Text style={styles.sectionLabel}>{mode === 'send' ? 'Recipient Details' : 'Demo flow'}</Text>
+              <Text style={styles.sectionLabel}>{mode === 'send' ? t('Recipient Details') : t('Demo flow')}</Text>
 
               {mode === 'send' && (
                 <>
-                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>Trusted recipients</Text><View style={{ flexDirection: 'row', gap: 12 }}><TouchableOpacity disabled={!recipientPassport} onPress={() => setShowRecipientPassport(true)}><Text style={[styles.savedRecipientAction, !recipientPassport && { color: Colors.outline }]}>Passport</Text></TouchableOpacity><TouchableOpacity onPress={() => { if (selectedRecipientId) setSelectedRecipientId(null); setRecipientPassport(null); setRecipientName(''); setRecipientPhone(''); setRecipientRelationship('Family'); setRecipientMonthlyPlan(''); requestAnimationFrame(() => nameRef.current?.focus()); }}><Text style={styles.savedRecipientAction}>+ Add recipient</Text></TouchableOpacity></View></View>
+                  <View style={styles.savedRecipientHeader}><Text style={styles.sectionLabel}>{t('Trusted recipients')}</Text><View style={{ flexDirection: 'row', gap: 12 }}><TouchableOpacity disabled={!recipientPassport} onPress={() => setShowRecipientPassport(true)}><Text style={[styles.savedRecipientAction, !recipientPassport && { color: Colors.outline }]}>{t('Passport')}</Text></TouchableOpacity><TouchableOpacity onPress={() => { if (selectedRecipientId) setSelectedRecipientId(null); setRecipientPassport(null); setRecipientName(''); setRecipientPhone(''); setRecipientRelationship('Family'); setRecipientMonthlyPlan(''); requestAnimationFrame(() => nameRef.current?.focus()); }}><Text style={styles.savedRecipientAction}>{t('+ Add recipient')}</Text></TouchableOpacity></View></View>
                   {recipients.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recipientRail}>
                     {recipients.map((recipient) => <TouchableOpacity key={recipient.id} style={[styles.savedRecipientChip, selectedRecipientId === recipient.id && styles.savedRecipientChipActive]} onPress={() => selectRecipient(recipient)}><View style={styles.savedRecipientAvatar}><Text style={styles.savedRecipientInitials}>{getInitials(recipient.fullName)}</Text></View><View><Text numberOfLines={1} style={styles.savedRecipientName}>{recipient.nickname || recipient.fullName}</Text><Text style={styles.savedRecipientMeta}>{recipient.network} · {recipient.relationship}</Text></View></TouchableOpacity>)}
-                  </ScrollView> : <Text style={styles.savedRecipientEmpty}>Save someone once, then choose them quickly next time.</Text>}
+                  </ScrollView> : <Text style={styles.savedRecipientEmpty}>{t('Save someone once, then choose them quickly next time.')}</Text>}
                   <TextInput
                     ref={nameRef}
                     style={styles.input}
-                    placeholder="Full name (e.g., Maama Namubiru)"
+                    placeholder={t('Full name (e.g., Maama Namubiru)')}
                     placeholderTextColor={Colors.outline}
                     value={recipientName}
                     onChangeText={setRecipientName}
@@ -721,7 +723,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Relationship (e.g., Mother, School, Supplier)"
+                    placeholder={t('Relationship (e.g., Mother, School, Supplier)')}
                     placeholderTextColor={Colors.outline}
                     value={recipientRelationship}
                     onChangeText={setRecipientRelationship}
@@ -729,7 +731,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Monthly support plan in USDC (optional)"
+                    placeholder={t('Monthly support plan in USDC (optional)')}
                     placeholderTextColor={Colors.outline}
                     value={recipientMonthlyPlan}
                     onChangeText={setRecipientMonthlyPlan}
@@ -739,7 +741,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   <TextInput
                     ref={phoneRef}
                     style={styles.input}
-                    placeholder="Phone (required, e.g., +256712345678)"
+                    placeholder={t('Phone (required, e.g., +256712345678)')}
                     placeholderTextColor={Colors.outline}
                     value={recipientPhone}
                     onChangeText={setRecipientPhone}
@@ -748,8 +750,8 @@ export default function SmartTransfer({ user }: Props = {}) {
                     returnKeyType="done"
                     onSubmitEditing={dismissKeyboard}
                   />
-                  <TouchableOpacity style={styles.saveRecipientButton} onPress={saveRecipient}><MaterialCommunityIcons name={selectedRecipientId ? 'content-save-edit-outline' : 'account-plus-outline'} size={17} color={Colors.onPrimary} /><Text style={styles.saveRecipientButtonText}>{selectedRecipientId ? 'Update trusted recipient' : 'Save as trusted recipient'}</Text></TouchableOpacity>
-                  {selectedRecipientId ? <TouchableOpacity style={styles.removeRecipientButton} onPress={removeRecipient}><MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} /><Text style={styles.removeRecipientText}>Remove saved recipient</Text></TouchableOpacity> : null}
+                  <TouchableOpacity style={styles.saveRecipientButton} onPress={saveRecipient}><MaterialCommunityIcons name={selectedRecipientId ? 'content-save-edit-outline' : 'account-plus-outline'} size={17} color={Colors.onPrimary} /><Text style={styles.saveRecipientButtonText}>{selectedRecipientId ? t('Update trusted recipient') : t('Save as trusted recipient')}</Text></TouchableOpacity>
+                  {selectedRecipientId ? <TouchableOpacity style={styles.removeRecipientButton} onPress={removeRecipient}><MaterialCommunityIcons name="trash-can-outline" size={16} color={Colors.error} /><Text style={styles.removeRecipientText}>{t('Remove saved recipient')}</Text></TouchableOpacity> : null}
                 </>
               )}
 
@@ -776,13 +778,13 @@ export default function SmartTransfer({ user }: Props = {}) {
 
               {mode === 'send' && (
                 <>
-                  <Text style={[styles.sectionLabel, { marginTop: 16 }]}>Purpose</Text>
+                  <Text style={[styles.sectionLabel, { marginTop: 16 }]}>{t('Purpose')}</Text>
                   <TouchableOpacity style={styles.purposePicker} onPress={() => setShowPicker(!showPicker)}>
                     <View style={styles.purposeRow}>
                       <MaterialCommunityIcons name={selectedPurpose.icon as any} size={20} color={Colors.primary} />
                       <View style={styles.purposeTextWrap}>
-                        <Text style={styles.purposeLabel}>{selectedPurpose.label}</Text>
-                        <Text style={styles.purposeDesc}>{selectedPurpose.desc}</Text>
+                        <Text style={styles.purposeLabel}>{t(selectedPurpose.label)}</Text>
+                        <Text style={styles.purposeDesc}>{t(selectedPurpose.desc)}</Text>
                       </View>
                       <MaterialCommunityIcons name={showPicker ? 'chevron-up' : 'chevron-down'} size={20} color={Colors.outline} />
                     </View>
@@ -798,8 +800,8 @@ export default function SmartTransfer({ user }: Props = {}) {
                         >
                           <MaterialCommunityIcons name={p.icon as any} size={20} color={selectedPurpose.value === p.value ? Colors.primary : Colors.onSurfaceVariant} />
                           <View>
-                            <Text style={[styles.pickerLabel, selectedPurpose.value === p.value && { color: Colors.primary }]}>{p.label}</Text>
-                            <Text style={styles.pickerDesc}>{p.desc}</Text>
+                            <Text style={[styles.pickerLabel, selectedPurpose.value === p.value && { color: Colors.primary }]}>{t(p.label)}</Text>
+                            <Text style={styles.pickerDesc}>{t(p.desc)}</Text>
                           </View>
                         </TouchableOpacity>
                       ))}
@@ -818,7 +820,7 @@ export default function SmartTransfer({ user }: Props = {}) {
               {submitting ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <ActivityIndicator color={Colors.onPrimary} />
-                  <Text style={styles.submitText}>Processing...</Text>
+                  <Text style={styles.submitText}>{t('Processing...')}</Text>
                 </View>
               ) : (
                 <>
@@ -829,10 +831,10 @@ export default function SmartTransfer({ user }: Props = {}) {
                   />
                   <Text style={styles.submitText}>
                     {mode === 'send'
-                      ? 'Send Money'
+                      ? t('Send Money')
                       : moneygramStatus?.configured
-                        ? 'Continue to MoneyGram'
-                        : 'Run MoneyGram Testnet cash-in'}
+                        ? t('Continue to MoneyGram')
+                        : t('Run MoneyGram Testnet cash-in')}
                   </Text>
                 </>
               )}
@@ -885,7 +887,8 @@ export default function SmartTransfer({ user }: Props = {}) {
 }
 
 function SafeRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return <View style={styles.safeRow}><MaterialCommunityIcons name={icon as any} size={17} color={Colors.onSurfaceVariant} /><Text style={styles.safeRowLabel}>{label}</Text><Text style={styles.safeRowValue} numberOfLines={2}>{value}</Text></View>;
+  const { t } = useLanguage();
+  return <View style={styles.safeRow}><MaterialCommunityIcons name={icon as any} size={17} color={Colors.onSurfaceVariant} /><Text style={styles.safeRowLabel}>{t(label)}</Text><Text style={styles.safeRowValue} numberOfLines={2}>{value}</Text></View>;
 }
 
 const styles = StyleSheet.create({
