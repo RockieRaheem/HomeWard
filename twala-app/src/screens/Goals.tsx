@@ -3,6 +3,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState, useCallback, useEffect } from 'react';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { goalsApi, notifyChange, type GoalData } from '../services/api';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +34,7 @@ const CATEGORIES = [
 ];
 
 export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string) => void }) {
+  const { t } = useLanguage();
   const [goals, setGoals] = useState<GoalData[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,21 +72,21 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
 
   const handleCreate = async () => {
     if (!newTitle.trim() || !newTarget.trim()) {
-      Alert.alert('Required', 'Title and target amount are required');
+      Alert.alert(t('Required'), t('Title and target amount are required'));
       return;
     }
     const target = parseFloat(newTarget.replace(/,/g, ''));
     if (isNaN(target) || target <= 0) {
-      Alert.alert('Invalid', 'Enter a valid target amount');
+      Alert.alert(t('Invalid'), t('Enter a valid target amount'));
       return;
     }
     try {
       const res = await goalsApi.create({ title: newTitle.trim(), targetAmountUgx: target, category: newCategory, description: newDesc.trim() });
       if (res.success) {
         setShowCreate(false); resetForm(); notifyChange(); fetchGoals();
-      } else Alert.alert('Error', res.message || 'Failed to create goal');
+      } else Alert.alert(t('Error'), res.message || t('Failed to create goal'));
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('Error'), err.message);
     }
   };
 
@@ -96,28 +98,28 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
     try {
       const res = await goalsApi.remove(deleteCandidate.id);
       if (res.success) { setDeleteCandidate(null); notifyChange(); fetchGoals(); }
-      else Alert.alert('Could not delete goal', res.message || 'Please try again.');
-    } catch (err: any) { Alert.alert('Could not delete goal', err.message || 'Please try again.'); }
+      else Alert.alert(t('Could not delete goal'), res.message || t('Please try again.'));
+    } catch (err: any) { Alert.alert(t('Could not delete goal'), err.message || t('Please try again.')); }
     finally { setDeleting(false); }
   };
 
   const handleEdit = async () => {
     if (!editGoalId || !editTitle.trim() || !editTarget.trim()) {
-      Alert.alert('Required', 'Title and target amount are required');
+      Alert.alert(t('Required'), t('Title and target amount are required'));
       return;
     }
     const target = parseFloat(editTarget.replace(/,/g, ''));
     if (isNaN(target) || target <= 0) {
-      Alert.alert('Invalid', 'Enter a valid target amount');
+      Alert.alert(t('Invalid'), t('Enter a valid target amount'));
       return;
     }
     try {
       const res = await goalsApi.update(editGoalId, { title: editTitle.trim(), targetAmountUgx: target, category: editCategory, description: editDesc.trim() });
       if (res.success) {
         setShowEdit(null); setEditGoalId(null); notifyChange(); fetchGoals();
-      } else Alert.alert('Error', res.message || 'Failed to update goal');
+      } else Alert.alert(t('Error'), res.message || t('Failed to update goal'));
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('Error'), err.message);
     }
   };
 
@@ -143,15 +145,15 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View style={{ flex: 1 }}><Text style={styles.eyebrow}>HOME PROJECTS</Text><Text style={styles.headerTitle}>Your goals</Text><Text style={styles.headerSub}>Turn every transfer into visible progress.</Text></View>
+            <View style={{ flex: 1 }}><Text style={styles.eyebrow}>{t('HOME PROJECTS')}</Text><Text style={styles.headerTitle}>{t('Your goals')}</Text><Text style={styles.headerSub}>{t('Turn every transfer into visible progress.')}</Text></View>
             <TouchableOpacity style={styles.headerAdd} onPress={() => { resetForm(); setShowCreate(true); }}><MaterialCommunityIcons name="plus" size={23} color={Colors.primary} /></TouchableOpacity>
           </View>
           <Text style={styles.headerSub}>{goals.length} goal{goals.length !== 1 ? 's' : ''} · {overallPct}% funded</Text>
         </View>
 
-        <View style={styles.listHeading}><Text style={styles.listHeadingTitle}>{goals.length ? 'All goals' : 'Start a goal'}</Text>{goals.length ? <Text style={styles.listHeadingMeta}>{goals.length} project{goals.length === 1 ? '' : 's'}</Text> : null}</View>
+        <View style={styles.listHeading}><Text style={styles.listHeadingTitle}>{goals.length ? t('All goals') : t('Start a goal')}</Text>{goals.length ? <Text style={styles.listHeadingMeta}>{goals.length} {t('projects')}</Text> : null}</View>
         {goals.length === 0 ? (
-          <TouchableOpacity style={styles.emptyState} onPress={() => { resetForm(); setShowCreate(true); }}><View style={styles.emptyIcon}><MaterialCommunityIcons name="flag-outline" size={30} color={Colors.primary} /></View><Text style={styles.emptyTitle}>Build something meaningful</Text><Text style={styles.emptyDesc}>Set a goal for a family project, school fees, land, or a brighter home.</Text><View style={styles.emptyCta}><Text style={styles.emptyCtaText}>Create a goal</Text><MaterialCommunityIcons name="arrow-right" size={17} color={Colors.onPrimary} /></View></TouchableOpacity>
+          <TouchableOpacity style={styles.emptyState} onPress={() => { resetForm(); setShowCreate(true); }}><View style={styles.emptyIcon}><MaterialCommunityIcons name="flag-outline" size={30} color={Colors.primary} /></View><Text style={styles.emptyTitle}>{t('Build something meaningful')}</Text><Text style={styles.emptyDesc}>{t('Set a goal for a family project, school fees, land, or a brighter home.')}</Text><View style={styles.emptyCta}><Text style={styles.emptyCtaText}>{t('Create a goal')}</Text><MaterialCommunityIcons name="arrow-right" size={17} color={Colors.onPrimary} /></View></TouchableOpacity>
         ) : (
           goals.map((goal) => {
             const pct = goal.targetAmountUgx > 0 ? Math.min(100, Math.round((goal.savedAmountUgx / goal.targetAmountUgx) * 100)) : 0;
@@ -226,33 +228,33 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
             <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.modalContent}>
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>New Savings Goal</Text>
+                  <Text style={styles.modalTitle}>{t('New Savings Goal')}</Text>
                   <TouchableOpacity onPress={() => { Keyboard.dismiss(); setShowCreate(false); }}>
                     <MaterialCommunityIcons name="close" size={24} color={Colors.onSurfaceVariant} />
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.inputLabel}>Title</Text>
-                <TextInput style={styles.input} placeholder="e.g. Buy Land in Wakiso" placeholderTextColor={Colors.outline} value={newTitle} onChangeText={setNewTitle} returnKeyType="next" />
+                <Text style={styles.inputLabel}>{t('Title')}</Text>
+                <TextInput style={styles.input} placeholder={t('e.g. Buy Land in Wakiso')} placeholderTextColor={Colors.outline} value={newTitle} onChangeText={setNewTitle} returnKeyType="next" />
 
-                <Text style={styles.inputLabel}>Target Amount (UGX)</Text>
+                <Text style={styles.inputLabel}>{t('Target Amount (UGX)')}</Text>
                 <TextInput style={styles.input} placeholder="e.g. 50000000" placeholderTextColor={Colors.outline} keyboardType="numeric" value={newTarget} onChangeText={setNewTarget} returnKeyType="next" />
 
-                <Text style={styles.inputLabel}>Category</Text>
+                <Text style={styles.inputLabel}>{t('Category')}</Text>
                 <View style={styles.categoryRow}>
                   {CATEGORIES.map((c) => (
                     <TouchableOpacity key={c.value} style={[styles.categoryChip, newCategory === c.value && styles.categoryChipActive]} onPress={() => { Keyboard.dismiss(); setNewCategory(c.value); }}>
                       <MaterialCommunityIcons name={c.icon as any} size={16} color={newCategory === c.value ? Colors.onPrimary : Colors.onSurfaceVariant} />
-                      <Text style={[styles.categoryChipText, newCategory === c.value && { color: Colors.onPrimary }]}>{c.label}</Text>
+                      <Text style={[styles.categoryChipText, newCategory === c.value && { color: Colors.onPrimary }]}>{t(c.label)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                <Text style={styles.inputLabel}>Description (optional)</Text>
-                <TextInput style={[styles.input, { height: 60 }]} placeholder="What is this goal for?" placeholderTextColor={Colors.outline} multiline value={newDesc} onChangeText={setNewDesc} />
+                <Text style={styles.inputLabel}>{t('Description (optional)')}</Text>
+                <TextInput style={[styles.input, { height: 60 }]} placeholder={t('What is this goal for?')} placeholderTextColor={Colors.outline} multiline value={newDesc} onChangeText={setNewDesc} />
 
                 <TouchableOpacity style={styles.createBtn} onPress={handleCreate}>
-                  <Text style={styles.createBtnText}>Create Goal</Text>
+                  <Text style={styles.createBtnText}>{t('Create Goal')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </TouchableOpacity>
@@ -267,33 +269,33 @@ export default function Goals({ onNavigateGoal }: { onNavigateGoal?: (id: string
             <TouchableOpacity activeOpacity={1} onPress={() => {}} style={styles.modalContent}>
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Edit Goal</Text>
+                  <Text style={styles.modalTitle}>{t('Edit Goal')}</Text>
                   <TouchableOpacity onPress={() => { Keyboard.dismiss(); setShowEdit(null); setEditGoalId(null); }}>
                     <MaterialCommunityIcons name="close" size={24} color={Colors.onSurfaceVariant} />
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.inputLabel}>Title</Text>
-                <TextInput style={styles.input} placeholder="e.g. Buy Land in Wakiso" placeholderTextColor={Colors.outline} value={editTitle} onChangeText={setEditTitle} returnKeyType="next" />
+                <Text style={styles.inputLabel}>{t('Title')}</Text>
+                <TextInput style={styles.input} placeholder={t('e.g. Buy Land in Wakiso')} placeholderTextColor={Colors.outline} value={editTitle} onChangeText={setEditTitle} returnKeyType="next" />
 
-                <Text style={styles.inputLabel}>Target Amount (UGX)</Text>
+                <Text style={styles.inputLabel}>{t('Target Amount (UGX)')}</Text>
                 <TextInput style={styles.input} placeholder="e.g. 50000000" placeholderTextColor={Colors.outline} keyboardType="numeric" value={editTarget} onChangeText={setEditTarget} returnKeyType="next" />
 
-                <Text style={styles.inputLabel}>Category</Text>
+                <Text style={styles.inputLabel}>{t('Category')}</Text>
                 <View style={styles.categoryRow}>
                   {CATEGORIES.map((c) => (
                     <TouchableOpacity key={c.value} style={[styles.categoryChip, editCategory === c.value && styles.categoryChipActive]} onPress={() => { Keyboard.dismiss(); setEditCategory(c.value); }}>
                       <MaterialCommunityIcons name={c.icon as any} size={16} color={editCategory === c.value ? Colors.onPrimary : Colors.onSurfaceVariant} />
-                      <Text style={[styles.categoryChipText, editCategory === c.value && { color: Colors.onPrimary }]}>{c.label}</Text>
+                      <Text style={[styles.categoryChipText, editCategory === c.value && { color: Colors.onPrimary }]}>{t(c.label)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                <Text style={styles.inputLabel}>Description (optional)</Text>
-                <TextInput style={[styles.input, { height: 60 }]} placeholder="What is this goal for?" placeholderTextColor={Colors.outline} multiline value={editDesc} onChangeText={setEditDesc} />
+                <Text style={styles.inputLabel}>{t('Description (optional)')}</Text>
+                <TextInput style={[styles.input, { height: 60 }]} placeholder={t('What is this goal for?')} placeholderTextColor={Colors.outline} multiline value={editDesc} onChangeText={setEditDesc} />
 
                 <TouchableOpacity style={styles.createBtn} onPress={handleEdit}>
-                  <Text style={styles.createBtnText}>Save Changes</Text>
+                  <Text style={styles.createBtnText}>{t('Save Changes')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </TouchableOpacity>
