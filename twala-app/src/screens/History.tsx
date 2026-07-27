@@ -5,6 +5,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { historyApi, eventsApi, type TransactionItem } from '../services/api';
 import TransactionReceipt from '../components/TransactionReceipt';
 import { downloadTransactions, shareOnWhatsApp } from '../utils/transactionActions';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const FILTERS = ['All', 'Sent', 'Received'];
 const STATUS_FILTERS = ['All', 'Completed', 'Pending', 'Failed'];
@@ -38,6 +39,7 @@ function getAvatarIcon(name: string): string {
 }
 
 export default function History() {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState('all');
   const [txs, setTxs] = useState<TransactionItem[]>([]);
   const [stats, setStats] = useState({ totalSent: 0, totalReceived: 0, thisMonth: 0 });
@@ -98,7 +100,7 @@ export default function History() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>History</Text>
+        <Text style={styles.headerTitle}>{t('History')}</Text>
         <View style={styles.headerActions}><TouchableOpacity style={styles.searchButton} onPress={shareList}><MaterialCommunityIcons name="whatsapp" size={20} color={Colors.primary} /></TouchableOpacity><TouchableOpacity style={styles.searchButton} onPress={() => downloadTransactions('homeward-transactions.csv', visibleTransactions)}><MaterialCommunityIcons name="download" size={20} color={Colors.primary} /></TouchableOpacity></View>
       </View>
 
@@ -109,40 +111,40 @@ export default function History() {
             const val = f.toLowerCase();
             return (
               <TouchableOpacity key={f} style={[styles.filterChip, filter === val && styles.filterChipActive]} onPress={() => setFilter(val)}>
-                <Text style={[styles.filterText, filter === val && styles.filterTextActive]}>{f}</Text>
+                <Text style={[styles.filterText, filter === val && styles.filterTextActive]}>{t(f)}</Text>
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        <Text style={styles.filterLabel}>Status</Text>
+        <Text style={styles.filterLabel}>{t('Status')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-          {STATUS_FILTERS.map((f) => { const val = f.toLowerCase(); return <TouchableOpacity key={f} style={[styles.filterChip, statusFilter === val && styles.filterChipActive]} onPress={() => setStatusFilter(val)}><Text style={[styles.filterText, statusFilter === val && styles.filterTextActive]}>{f}</Text></TouchableOpacity>; })}
+          {STATUS_FILTERS.map((f) => { const val = f.toLowerCase(); return <TouchableOpacity key={f} style={[styles.filterChip, statusFilter === val && styles.filterChipActive]} onPress={() => setStatusFilter(val)}><Text style={[styles.filterText, statusFilter === val && styles.filterTextActive]}>{t(f)}</Text></TouchableOpacity>; })}
         </ScrollView>
-        <Text style={styles.filterLabel}>Period</Text>
+        <Text style={styles.filterLabel}>{t('Period')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-          {DATE_FILTERS.map((f) => { const val = f.toLowerCase(); return <TouchableOpacity key={f} style={[styles.filterChip, dateFilter === val && styles.filterChipActive]} onPress={() => setDateFilter(val)}><Text style={[styles.filterText, dateFilter === val && styles.filterTextActive]}>{f}</Text></TouchableOpacity>; })}
+          {DATE_FILTERS.map((f) => { const val = f.toLowerCase(); return <TouchableOpacity key={f} style={[styles.filterChip, dateFilter === val && styles.filterChipActive]} onPress={() => setDateFilter(val)}><Text style={[styles.filterText, dateFilter === val && styles.filterTextActive]}>{t(f)}</Text></TouchableOpacity>; })}
         </ScrollView>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statCardLabel}>Total Sent</Text>
+            <Text style={styles.statCardLabel}>{t('Total Sent')}</Text>
             <Text style={styles.statCardValue}>${stats.totalSent.toLocaleString()}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: Colors.primary }]}>
-            <Text style={[styles.statCardLabel, { color: Colors.onPrimary, opacity: 0.7 }]}>This Month</Text>
+            <Text style={[styles.statCardLabel, { color: Colors.onPrimary, opacity: 0.7 }]}>{t('This Month')}</Text>
             <Text style={[styles.statCardValue, { color: Colors.onPrimary }]}>{stats.thisMonth} TX</Text>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Transactions ({visibleTransactions.length})</Text>
+          <Text style={styles.sectionTitle}>{t('Transactions')} ({visibleTransactions.length})</Text>
         </View>
 
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
         ) : visibleTransactions.length === 0 ? (
-          <Text style={{ textAlign: 'center', color: Colors.onSurfaceVariant, marginTop: 40, fontFamily: 'Inter' }}>No transactions yet</Text>
+          <Text style={{ textAlign: 'center', color: Colors.onSurfaceVariant, marginTop: 40, fontFamily: 'Inter' }}>{t('No transactions yet')}</Text>
         ) : (
           visibleTransactions.map((tx, i) => {
             const cfg = STATUS_CONFIG[tx.status] || STATUS_CONFIG.completed;
@@ -157,7 +159,7 @@ export default function History() {
                       <Text style={styles.txName}>{tx.recipientName}</Text>
                       {i === 0 && (
                         <View style={styles.newBadge}>
-                          <Text style={styles.newBadgeText}>NEW</Text>
+                          <Text style={styles.newBadgeText}>{t('NEW')}</Text>
                         </View>
                       )}
                     </View>
@@ -174,7 +176,7 @@ export default function History() {
                   </Text>
                   <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
                     <View style={[styles.statusDot, { backgroundColor: cfg.color }]} />
-                    <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+                    <Text style={[styles.statusText, { color: cfg.color }]}>{t(cfg.label)}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
