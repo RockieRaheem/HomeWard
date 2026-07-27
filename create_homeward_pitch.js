@@ -12,7 +12,7 @@ pptx.theme = { headFontFace: 'Aptos Display', bodyFontFace: 'Aptos', lang: 'en-U
 
 const C = { navy: '063A45', green: '008A68', mint: 'DFF7EA', lime: 'C9F04A', cream: 'F7F8F4', white: 'FFFFFF', ink: '123039', muted: '60767A', line: 'D9E6E1', amber: 'F2B84B', rose: 'D76464', sky: 'DCEFF6' };
 const S = pptx.ShapeType;
-const HERO_IMAGE = 'C:/Users/Raheem/Desktop/Twala/homeward-diaspora-hero.png';
+const HERO_IMAGE = 'C:/Users/Raheem/Desktop/Twala/homeward-anxious-uae-youth.png';
 function slide(dark = false) { const s = pptx.addSlide(); s.background = { color: dark ? C.navy : C.cream }; return s; }
 function rect(s, x, y, w, h, color, radius = 0.16) { s.addShape(S.roundRect, { x, y, w, h, rectRadius: radius, fill: { color }, line: { color, transparency: 100 } }); }
 function txt(s, value, x, y, w, h, o = {}) { s.addText(value, { x, y, w, h, margin: o.margin ?? 0, fontFace: o.fontFace || 'Aptos', fontSize: o.fontSize || 14, color: o.color || C.ink, bold: o.bold || false, align: o.align || 'left', valign: o.valign || 'mid', breakLine: false, fit: 'shrink', paraSpaceAfterPt: 0, ...o }); }
