@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Typography, BorderRadius } from '../theme';
+import { useLanguage } from '../i18n/LanguageContext';
 
 type IconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export default function BottomNavBar({ activeRoute, onNavigate }: Props) {
+  const { t } = useLanguage();
   return (
     <View style={styles.container}>
       {NAV_ITEMS.map((item) => {
@@ -44,7 +46,7 @@ export default function BottomNavBar({ activeRoute, onNavigate }: Props) {
               color={isActive ? Colors.onSecondaryContainer : Colors.onSurfaceVariant}
             />
             <Text style={[styles.label, isActive && styles.activeLabel]}>
-              {item.label}
+              {t(item.label)}
             </Text>
           </TouchableOpacity>
         );

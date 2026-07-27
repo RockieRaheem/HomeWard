@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { authApi } from '../services/api';
 import LanguagePicker, { LanguageButton } from '../components/LanguagePicker';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface Props {
   onProfileReady: (profile: { id: string; name: string; phone: string; accessToken?: string }) => void;
@@ -12,6 +13,7 @@ interface Props {
 const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
 
 export default function ProfileScreen({ onProfileReady }: Props) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'register' | 'login'>('register');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -85,15 +87,15 @@ export default function ProfileScreen({ onProfileReady }: Props) {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{mode === 'register' ? 'Create Account' : 'Welcome Back'}</Text>
+          <Text style={styles.cardTitle}>{mode === 'register' ? t('Create Account') : t('Welcome Back')}</Text>
           <Text style={styles.cardSubtitle}>
-            {mode === 'register' ? 'Set up your profile to start sending money' : 'Enter your PIN to continue'}
+            {mode === 'register' ? t('Set up your profile to start sending money') : t('Enter your PIN to continue')}
           </Text>
 
           {mode === 'register' && (
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder={t('Full Name')}
               placeholderTextColor={Colors.outline}
               value={name}
               onChangeText={setName}
@@ -106,7 +108,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
           <TextInput
             ref={phoneRef}
             style={styles.input}
-            placeholder="Phone Number (e.g. +256712345678)"
+            placeholder={t('Phone Number (e.g. +256712345678)')}
             placeholderTextColor={Colors.outline}
             value={phone}
             onChangeText={setPhone}
@@ -121,7 +123,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
           <TextInput
             ref={pinRef}
             style={styles.input}
-            placeholder={mode === 'register' ? 'Create PIN (4-6 digits)' : 'Enter PIN'}
+            placeholder={mode === 'register' ? t('Create PIN (4-6 digits)') : t('Enter PIN')}
             placeholderTextColor={Colors.outline}
             value={pin}
             onChangeText={setPin}
@@ -136,7 +138,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
             <TextInput
               ref={pinConfirmRef}
               style={styles.input}
-              placeholder="Confirm PIN"
+              placeholder={t('Confirm PIN')}
               placeholderTextColor={Colors.outline}
               value={pinConfirm}
               onChangeText={setPinConfirm}
