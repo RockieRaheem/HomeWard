@@ -26,7 +26,9 @@
 
 For many Ugandans abroad, a transfer home is not merely money movement. It is school fees, rent, medical support, land, construction, or a regular promise to family. Existing flows often leave senders worried about wrong numbers, unclear fees, and whether the intended person received the money.
 
-HomeWard is a mobile-first remittance experience designed around **people, purpose, and proof**. It helps a sender verify a trusted recipient, understand the expected UGX amount before confirming, organise recurring family support, and retain a clear receipt with independent Stellar Testnet evidence.
+There is another barrier that is easy to overlook: financial apps are often written for confident English readers with experience using digital products. Some intended users have low literacy, prefer a local language, or are more comfortable speaking than typing. A safe remittance product cannot be inclusive if understanding the interface depends on technical English.
+
+HomeWard is a mobile-first remittance experience designed around **people, purpose, proof, and accessible language**. It helps a sender verify a trusted recipient, understand the expected UGX amount before confirming, organise recurring family support, and retain a clear receipt with independent Stellar Testnet evidence.
 
 > The intended experience: pay abroad → family receives UGX on mobile money → both people have a clear record.
 
@@ -55,7 +57,8 @@ The user does not need to understand USDC or Stellar. Those are implementation r
 
 - HomeWard integrates **Sunbird AI** as its Ugandan-language intelligence layer: translation, conversational AI fallback, speech-to-text, and text-to-speech are available through server-side Sunbird endpoints when a Sunbird API token is configured.
 - The language choice persists across the app. Luganda is implemented across the account, dashboard, transfer, goals, history, Circles, and receipt journeys, so language support is part of the product—not only a chatbot setting.
-- A sender can speak to HomeWard, hear a response, and receive guidance in a familiar language rather than being forced to understand financial English or blockchain terminology.
+- A sender can speak to HomeWard, hear a response, and receive guidance in a familiar language rather than being forced to understand financial English or blockchain terminology. This makes navigation more approachable for users with low literacy or limited confidence reading English.
+- Clear labels, voice interaction, and local-language guidance help users understand what they are doing before a financial action is confirmed; they do not remove the need for explicit sender confirmation.
 - An AI assistant can explain balances, goals, history, rates, and transfer preparation.
 - Server-side guardrails: the assistant cannot settle a payment on its own; the user must explicitly confirm a protected transfer action.
 
