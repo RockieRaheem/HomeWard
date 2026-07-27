@@ -12,6 +12,7 @@ pptx.theme = { headFontFace: 'Aptos Display', bodyFontFace: 'Aptos', lang: 'en-U
 
 const C = { navy: '063A45', green: '008A68', mint: 'DFF7EA', lime: 'C9F04A', cream: 'F7F8F4', white: 'FFFFFF', ink: '123039', muted: '60767A', line: 'D9E6E1', amber: 'F2B84B', rose: 'D76464', sky: 'DCEFF6' };
 const S = pptx.ShapeType;
+const HERO_IMAGE = 'C:/Users/Raheem/Desktop/Twala/homeward-diaspora-hero.png';
 function slide(dark = false) { const s = pptx.addSlide(); s.background = { color: dark ? C.navy : C.cream }; return s; }
 function rect(s, x, y, w, h, color, radius = 0.16) { s.addShape(S.roundRect, { x, y, w, h, rectRadius: radius, fill: { color }, line: { color, transparency: 100 } }); }
 function txt(s, value, x, y, w, h, o = {}) { s.addText(value, { x, y, w, h, margin: o.margin ?? 0, fontFace: o.fontFace || 'Aptos', fontSize: o.fontSize || 14, color: o.color || C.ink, bold: o.bold || false, align: o.align || 'left', valign: o.valign || 'mid', breakLine: false, fit: 'shrink', paraSpaceAfterPt: 0, ...o }); }
@@ -23,6 +24,8 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
 // 1. Killer hook
 {
   const s = slide(true);
+  s.addImage({ path: HERO_IMAGE, x: 0, y: 0, w: 13.333, h: 7.5 });
+  s.addShape(S.rect, { x: 0, y: 0, w: 8.2, h: 7.5, fill: { color: '061E25', transparency: 5 }, line: { color: '061E25', transparency: 100 } });
   s.addShape(S.arc, { x: 8.25, y: -1.15, w: 6.1, h: 6.1, adjustPoint: 0.25, fill: { color: C.navy, transparency: 100 }, line: { color: C.green, transparency: 25, width: 11 } });
   s.addShape(S.arc, { x: 9.2, y: 3.1, w: 4.4, h: 4.4, adjustPoint: 0.25, fill: { color: C.navy, transparency: 100 }, line: { color: C.lime, transparency: 25, width: 7 } });
   tag(s, 'A 60-second story', 0.75, 0.65, 1.65, true);
@@ -100,12 +103,17 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
   items.forEach((a, i) => { const x = 0.75 + (i % 2) * 6.02; const y = 2.45 + Math.floor(i / 2) * 1.52; rect(s, x, y, 5.58, 1.2, C.white); dot(s, x + 0.28, y + 0.32, [C.green, C.amber, C.rose, C.green][i]); txt(s, a[0], x + 0.55, y + 0.2, 3.9, 0.24, { fontSize: 15.5, bold: true, color: C.navy }); txt(s, a[1], x + 0.55, y + 0.58, 4.45, 0.35, { fontSize: 11.5, color: C.muted, valign: 'top' }); }); footer(s, 7);
 }
 
-// 8. Wedge
+// 8. Traction
 {
-  const s = slide(); header(s, 'Why HomeWard can win', 'Not another wallet. A family-support operating system.');
-  const rows = [['Before sending', 'Recipient + amount anxiety', 'Passport, price clarity, local-language guidance'], ['After sending', 'Status disappears', 'Receipt, Stellar proof, history and SMS sandbox updates'], ['Every month', 'Repeat transfers feel fragmented', 'Circles, Goals, plans and family progress'], ['For low-literacy users', 'Financial English excludes', 'Sunbird-powered local language and voice access']];
-  rect(s, 0.75, 2.4, 11.8, 0.52, C.navy); [['MOMENT', 1.0, 2.57, 2.4], ['TYPICAL EXPERIENCE', 4.1, 2.57, 2.7], ['HOMEWARD DIFFERENCE', 8.2, 2.57, 3.0]].forEach(h => txt(s, h[0], h[1], h[2], h[3], 0.16, { fontSize: 9.5, bold: true, color: C.white, charSpacing: 0.7 }));
-  rows.forEach((r, i) => { const y = 3.0 + i * 0.71; rect(s, 0.75, y, 11.8, 0.62, i % 2 ? 'EDF4F1' : C.white); txt(s, r[0], 1.0, y + 0.18, 2.3, 0.18, { fontSize: 11.5, bold: true, color: C.navy }); txt(s, r[1], 4.1, y + 0.18, 3.3, 0.18, { fontSize: 10.8, color: C.muted }); txt(s, r[2], 8.2, y + 0.16, 3.7, 0.22, { fontSize: 10.8, bold: true, color: C.green }); }); footer(s, 8);
+  const s = slide(); header(s, 'Traction', 'We have shipped proof - not just a concept.', 'We are deliberately reporting product evidence instead of inventing user-growth numbers before a regulated pilot.');
+  const proof = [
+    ['LIVE', 'Mobile-first deployed experience', 'Judges can open HomeWard on a phone, register, and complete the core journey.'],
+    ['REAL', 'Stellar Testnet settlement', 'Individual wallets, Test USDC transfers, hashes and explorer links are in the demo.'],
+    ['BUILT', 'Family-support operating system', 'Recipient Passports, Goals, Circles, receipts, filters, notifications and transfer guardrails.'],
+    ['ACCESSIBLE', 'Sunbird AI language layer', 'Luganda interface coverage plus speech and conversational support when configured.'],
+  ];
+  proof.forEach((p, i) => { const x = 0.75 + (i % 2) * 6.02; const y = 2.45 + Math.floor(i / 2) * 1.55; rect(s, x, y, 5.58, 1.2, C.white); tag(s, p[0], x + 0.23, y + 0.22, 0.88, i === 1); txt(s, p[1], x + 1.35, y + 0.2, 3.7, 0.25, { fontSize: 15, bold: true, color: C.navy }); txt(s, p[2], x + 1.35, y + 0.57, 3.9, 0.38, { fontSize: 11.3, color: C.muted, valign: 'top' }); });
+  rect(s, 0.75, 5.75, 11.8, 0.58, C.mint); txt(s, 'Next traction milestone: a regulated UAE-to-Uganda pilot with repeat family-support behavior measured in the field.', 1.0, 5.93, 11.3, 0.18, { fontSize: 13.5, bold: true, color: C.navy, align: 'center' }); footer(s, 8);
 }
 
 // 9. Roadmap and ask
