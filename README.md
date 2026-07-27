@@ -51,12 +51,15 @@ The user does not need to understand USDC or Stellar. Those are implementation r
 - Each Circle has a recipient or goal, planned amount, purpose, contribution totals, latest receipt, share summary, and pause/resume control.
 - Circles do **not** send money automatically. Every payment still needs the sender’s explicit confirmation.
 
-### AI and accessible language support
+### Sunbird AI: financial guidance in familiar Ugandan languages
 
-- An AI assistant that can explain balances, goals, history, rates, and transfer preparation.
+- HomeWard integrates **Sunbird AI** as its Ugandan-language intelligence layer: translation, conversational AI fallback, speech-to-text, and text-to-speech are available through server-side Sunbird endpoints when a Sunbird API token is configured.
+- The language choice persists across the app. Luganda is implemented across the account, dashboard, transfer, goals, history, Circles, and receipt journeys, so language support is part of the product—not only a chatbot setting.
+- A sender can speak to HomeWard, hear a response, and receive guidance in a familiar language rather than being forced to understand financial English or blockchain terminology.
+- An AI assistant can explain balances, goals, history, rates, and transfer preparation.
 - Server-side guardrails: the assistant cannot settle a payment on its own; the user must explicitly confirm a protected transfer action.
-- Sunbird AI integration for Ugandan-language translation, speech-to-text, text-to-speech, and conversational fallback when configured.
-- A persistent language picker with Luganda coverage across the core account, dashboard, transfer, goals, history, Circles, and receipt journeys.
+
+> Sunbird credentials remain server-side. HomeWard never exposes the Sunbird token to the mobile client.
 
 ### Proof and communication
 
@@ -114,7 +117,7 @@ HomeWard is therefore a working Testnet product demonstration and partner-ready 
 | API | Node.js, Express, TypeScript |
 | Blockchain | `@stellar/stellar-sdk`, Stellar Testnet, Horizon, Test USDC |
 | Data | Supabase / PostgreSQL |
-| AI | Google Gemini, Groq, Sunbird AI |
+| AI and language access | Sunbird AI translation, conversational AI, speech-to-text, and text-to-speech; Google Gemini and Groq for assistant intelligence |
 | Messaging | Africa’s Talking Sandbox |
 | Funding and payout demos | MoneyGram Ramps demo flow, Transak hosted checkout, Kotani Pay Sandbox |
 | Deployment | Vercel frontend, Railway backend |
@@ -191,8 +194,8 @@ Before handling customer money, HomeWard needs regulated funding and payout part
 
 ## Team
 
-- Raheem Kamwanga
-- Kisakye Kabazaile
-- Sunday Lugai
+- **Kamwanga Raheem**
+- **Kisakye Abigail**
+- **Sunday Emmanuel Lugai**
 
 Built for Blockchain DevFest Kampala 2026.
