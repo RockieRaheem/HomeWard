@@ -5,6 +5,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { chatApi, isBackendOnline, notifyChange, type ChatMsg, type ChatSessionData, type NavigateAction, type HomewardLanguage } from '../services/api';
 import DismissKeyboard from '../components/DismissKeyboard';
 import { createVoiceRecognition, isVoiceRecognitionSupported, type VoiceRecognition } from '../services/voiceRecognition';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
@@ -222,6 +223,7 @@ interface Props {
 export type { Props as AIAssistantProps };
 
 export default function AIAssistant({ onNavigate, onNavigateGoal, userName, userPhone }: Props) {
+  const { language, setLanguage } = useLanguage();
   const [sessions, setSessions] = useState<ChatSessionData[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -235,7 +237,6 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [voiceHint, setVoiceHint] = useState<string | null>(null);
-  const [language, setLanguage] = useState<HomewardLanguage['code']>('eng');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [sunbirdEnabled, setSunbirdEnabled] = useState(false);
   const [transcribing, setTranscribing] = useState(false);

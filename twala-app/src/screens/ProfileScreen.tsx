@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import { authApi } from '../services/api';
+import LanguagePicker, { LanguageButton } from '../components/LanguagePicker';
 
 interface Props {
   onProfileReady: (profile: { id: string; name: string; phone: string; accessToken?: string }) => void;
@@ -18,6 +19,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
   const [pinConfirm, setPinConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
 
   const phoneRef = useRef<TextInput>(null);
   const pinRef = useRef<TextInput>(null);
@@ -75,6 +77,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.content}>
+        <View style={styles.languageTop}><LanguageButton onPress={() => setLanguagePickerOpen(true)} /></View>
         <View style={styles.brand}>
           <Image source={HOMEWARD_LOGO} style={styles.logoCircle} accessibilityLabel="HomeWard logo" />
           <Text style={styles.brandName}>HomeWard</Text>
@@ -168,13 +171,14 @@ export default function ProfileScreen({ onProfileReady }: Props) {
           </TouchableOpacity>
         </View>
       </View>
+      <LanguagePicker visible={languagePickerOpen} onClose={() => setLanguagePickerOpen(false)} />
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.primary },
-  content: { flex: 1, justifyContent: 'center', padding: Spacing.containerPaddingMobile },
+  content: { flex: 1, justifyContent: 'center', padding: Spacing.containerPaddingMobile }, languageTop: { position: 'absolute', top: 18, right: Spacing.containerPaddingMobile, zIndex: 1 },
   brand: { alignItems: 'center', marginBottom: Spacing.gutter * 1.5 },
   logoCircle: {
     width: 72, height: 72, borderRadius: 36,
