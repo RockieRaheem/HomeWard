@@ -402,11 +402,23 @@ export default function AIAssistant({ onNavigate, onNavigateGoal, userName, user
     } catch (error: any) { setVoiceHint(error?.name === 'NotAllowedError' ? 'Microphone access was blocked. Allow it in browser settings and try again.' : 'Could not start recording. Please try again.'); return true; }
   };
 
+  const speakWithDevice = (text: string, id: string, notice?: string) => {
+    const speech = (globalThis as any).speechSynthesis;
+    const Utterance = (globalThis as any).SpeechSynthesisUtterance;
+    if (Platform.OS !== 'web' || !speech || !Utterance) { setSpeakingMessageId(null); return setVoiceHint('Voice playback needs the deployed web app in a browser with audio enabled.'); }
+    speech.cancel();
+    const utterance = new Utterance(text.replace(/[*_`#]/g, '').replace(/https?:\/\/\S+/g, ''));
+    utterance.lang = BROWSER_VOICE_LOCALES[language]; utterance.rate = 0.92;
+    utterance.onend = () => { setSpeakingMessageId(null); setVoiceHint(null); };
+    utterance.onerror = () => { setSpeakingMessageId(null); setVoiceHint('Your browser could not play this voice. Check media permissions and volume.'); };
+    setSpeakingMessageId(id); setVoiceHint(notice || 'Reading the reply aloud…'); speech.speak(utterance);
+  };
+
   const speakResponse = async (text: string, id: string) => {
-    if (!sunbirdEnabled) return setVoiceHint('Add SUNBIRD_API_TOKEN on Railway to hear HomeWard in your selected language.');
-    if (Platform.OS !== 'web' || !(globalThis as any).Audio) return setVoiceHint('Spoken replies are available in the deployed web app.');
+    if (!sunbirdEnabled) return speakWithDevice(text, id, 'Sunbird is not connected yet; using your device voice.');
+    if (Platform.OS !== 'web' || !(globalThis as any).Audio) return speakWithDevice(text, id, 'Using your device voice.');
     setSpeakingMessageId(id); setVoiceHint('Sunbird AI is preparing a spoken reply…');
-    try { const response = await chatApi.speech(text, language); if (!response.success || !response.data?.audioUrl) throw new Error(response.message || 'Could not create speech'); const audio = new (globalThis as any).Audio(response.data.audioUrl); audio.onended = () => setSpeakingMessageId(null); audio.onerror = () => { setSpeakingMessageId(null); setVoiceHint('The spoken reply could not play.'); }; await audio.play(); setVoiceHint(null); } catch (error: any) { setSpeakingMessageId(null); setVoiceHint(error?.message || 'Could not create a spoken reply.'); }
+    try { const response = await chatApi.speech(text, language); if (!response.success || !response.data?.audioUrl) throw new Error(response.message || 'Could not create speech'); const audio = new (globalThis as any).Audio(response.data.audioUrl); audio.onended = () => { setSpeakingMessageId(null); setVoiceHint(null); }; audio.onerror = () => speakWithDevice(text, id, 'Sunbird audio could not play; using your device voice.'); await audio.play(); setVoiceHint(null); } catch { speakWithDevice(text, id, 'Sunbird voice is unavailable; using your device voice.'); }
   };
 
   const toggleVoiceInput = async () => {
