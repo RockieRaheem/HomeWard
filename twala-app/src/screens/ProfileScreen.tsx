@@ -47,14 +47,14 @@ export default function ProfileScreen({ onProfileReady }: Props) {
     const trimmedPhone = phone.trim();
     const trimmedName = name.trim();
 
-    if (!trimmedPhone) return Alert.alert('Phone Required', 'Enter your mobile money phone number.');
-    if (!/^\+?\d{9,13}$/.test(trimmedPhone)) return Alert.alert('Invalid Phone', 'Enter a valid phone number (e.g. +256712345678).');
+    if (!trimmedPhone) return Alert.alert(t('Phone Required'), t('Enter your mobile money phone number.'));
+    if (!/^\+?\d{9,13}$/.test(trimmedPhone)) return Alert.alert(t('Invalid Phone'), t('Enter a valid phone number (e.g. +256712345678).'));
     if (mode === 'register') {
-      if (!trimmedName) return Alert.alert('Name Required', 'Enter your full name.');
-      if (pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) return Alert.alert('Invalid PIN', 'Create a 4-6 digit PIN.');
-      if (pin !== pinConfirm) return Alert.alert('PIN Mismatch', 'PINs do not match.');
+      if (!trimmedName) return Alert.alert(t('Name Required'), t('Enter your full name.'));
+      if (pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) return Alert.alert(t('Invalid PIN'), t('Create a 4-6 digit PIN.'));
+      if (pin !== pinConfirm) return Alert.alert(t('PIN Mismatch'), t('PINs do not match.'));
     } else {
-      if (!pin) return Alert.alert('PIN Required', 'Enter your PIN to log in.');
+      if (!pin) return Alert.alert(t('PIN Required'), t('Enter your PIN to log in.'));
     }
 
     submitInFlight.current = true;
@@ -66,10 +66,10 @@ export default function ProfileScreen({ onProfileReady }: Props) {
       if (res.success && res.data) {
         onProfileReady({ id: res.data.id, name: res.data.name, phone: res.data.phone, accessToken: res.data.accessToken });
       } else {
-        Alert.alert('Error', res.message || 'Something went wrong. Try again.');
+        Alert.alert(t('Error'), res.message || t('Something went wrong. Try again.'));
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Connection error. Check that the backend is running.');
+      Alert.alert(t('Error'), err.message || t('Connection error. Check that the backend is running.'));
     } finally {
       submitInFlight.current = false;
       setLoading(false);
@@ -159,7 +159,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
             {loading ? (
               <ActivityIndicator color={Colors.onPrimary} />
             ) : (
-              <Text style={styles.buttonText}>{checking ? 'Checking account…' : mode === 'register' ? 'Create Account' : 'Log In'}</Text>
+              <Text style={styles.buttonText}>{checking ? t('Checking account…') : mode === 'register' ? t('Create Account') : t('Log In')}</Text>
             )}
           </TouchableOpacity>
 
@@ -168,7 +168,7 @@ export default function ProfileScreen({ onProfileReady }: Props) {
             onPress={() => { setMode(mode === 'register' ? 'login' : 'register'); setPin(''); setPinConfirm(''); }}
           >
             <Text style={styles.switchText}>
-              {mode === 'register' ? 'Already have an account? Log in' : "Don't have an account? Create one"}
+              {mode === 'register' ? t('Already have an account? Log in') : t("Don't have an account? Create one")}
             </Text>
           </TouchableOpacity>
         </View>
