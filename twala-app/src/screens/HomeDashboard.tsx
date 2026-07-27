@@ -5,6 +5,7 @@ import { Colors, Typography, Spacing, BorderRadius, Shadow } from '../theme';
 import type { AppScreen } from '../components/BottomNavBar';
 import { walletApi, ratesApi, historyApi, goalsApi, eventsApi, notificationsApi, authApi, type GoalData, type TransactionItem, type AppNotificationData } from '../services/api';
 import LanguagePicker, { LanguageButton } from '../components/LanguagePicker';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const HOMEWARD_LOGO = require('../../assets/branding/homeward-logo.png');
 
@@ -50,6 +51,7 @@ const goalAccents = [
 ];
 
 export default function HomeDashboard({ onNavigate, onNavigateGoal, onSignOut, onProfileUpdate, user }: { onNavigate: (route: AppScreen) => void; onNavigateGoal?: (id: string) => void; onSignOut?: () => void; onProfileUpdate?: (name: string) => void; user?: { id: string; name: string; phone: string } }) {
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +149,7 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, onSignOut, o
         <View style={styles.welcome}>
           <Text style={styles.greeting}>{getGreeting()}</Text>
           <Text style={styles.name}>{user?.name?.split(' ')[0] || 'there'} <Text style={styles.wave}>👋</Text></Text>
-          <Text style={styles.subtitle}>Everything you send home, in one clear view.</Text>
+          <Text style={styles.subtitle}>{t('Everything you send home, in one clear view.')}</Text>
         </View>
 
         {error ? <TouchableOpacity style={styles.errorBanner} onPress={fetchData}><MaterialCommunityIcons name="refresh" size={18} color={Colors.error} /><Text style={styles.errorText}>{error} Tap to retry.</Text></TouchableOpacity> : null}
@@ -160,15 +162,15 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, onSignOut, o
           </View>
 
           <View style={styles.quickActions}>
-            <QuickAction icon="send" label="Send money" tint="#E0F5EC" color={Colors.primary} onPress={() => onNavigate('Transfer')} />
-            <QuickAction icon="cash-plus" label="Cash in" tint="#FFF0D9" color={Colors.secondary} onPress={() => onNavigate('Transfer')} />
-            <QuickAction icon="message-processing-outline" label="Ask HomeWard" tint="#DDF4FF" color={Colors.tertiary} onPress={() => onNavigate('Assistant')} />
-            <QuickAction icon="account-group-outline" label="Circles" tint="#F3E8FF" color="#7030A0" onPress={() => onNavigate('Circles')} />
+            <QuickAction icon="send" label={t('Send money')} tint="#E0F5EC" color={Colors.primary} onPress={() => onNavigate('Transfer')} />
+            <QuickAction icon="cash-plus" label={t('Cash in')} tint="#FFF0D9" color={Colors.secondary} onPress={() => onNavigate('Transfer')} />
+            <QuickAction icon="message-processing-outline" label={t('Ask HomeWard')} tint="#DDF4FF" color={Colors.tertiary} onPress={() => onNavigate('Assistant')} />
+            <QuickAction icon="account-group-outline" label={t('Circles')} tint="#F3E8FF" color="#7030A0" onPress={() => onNavigate('Circles')} />
           </View>
 
           <View style={styles.sectionHeader}>
-            <View><Text style={styles.sectionEyebrow}>HOME PROJECTS</Text><Text style={styles.sectionTitle}>Your goals</Text></View>
-            <TouchableOpacity style={styles.textAction} onPress={() => onNavigate('Goals')}><Text style={styles.textActionLabel}>See all</Text><MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} /></TouchableOpacity>
+            <View><Text style={styles.sectionEyebrow}>HOME PROJECTS</Text><Text style={styles.sectionTitle}>{t('Your goals')}</Text></View>
+            <TouchableOpacity style={styles.textAction} onPress={() => onNavigate('Goals')}><Text style={styles.textActionLabel}>{t('See all')}</Text><MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} /></TouchableOpacity>
           </View>
 
           {featuredGoals.length ? <>
@@ -192,8 +194,8 @@ export default function HomeDashboard({ onNavigate, onNavigateGoal, onSignOut, o
           </TouchableOpacity>
 
           <View style={styles.sectionHeader}>
-            <View><Text style={styles.sectionEyebrow}>MONEY MOVEMENT</Text><Text style={styles.sectionTitle}>Recent activity</Text></View>
-            <TouchableOpacity style={styles.textAction} onPress={() => onNavigate('History')}><Text style={styles.textActionLabel}>View history</Text><MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} /></TouchableOpacity>
+            <View><Text style={styles.sectionEyebrow}>MONEY MOVEMENT</Text><Text style={styles.sectionTitle}>{t('Recent activity')}</Text></View>
+            <TouchableOpacity style={styles.textAction} onPress={() => onNavigate('History')}><Text style={styles.textActionLabel}>{t('View history')}</Text><MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} /></TouchableOpacity>
           </View>
           <View style={styles.activityCard}>
             {transactions.length ? transactions.map((transaction, index) => <React.Fragment key={transaction.id}><TouchableOpacity style={styles.activityRow} onPress={() => onNavigate('History')}><View style={[styles.activityIcon, { backgroundColor: transaction.type === 'sent' ? '#E0F5EC' : '#FFF0D9' }]}><MaterialCommunityIcons name={transaction.type === 'sent' ? 'arrow-top-right' : 'arrow-bottom-left'} size={21} color={transaction.type === 'sent' ? Colors.primary : Colors.secondary} /></View><View style={styles.activityInfo}><Text style={styles.activityName} numberOfLines={1}>{transaction.type === 'sent' ? `To ${transaction.recipientName}` : `From ${transaction.recipientName || 'HomeWard'}`}</Text><Text style={styles.activitySub}>{transaction.purpose || 'Transfer'} · {timeAgo(transaction.createdAt)}</Text></View><View style={styles.activityAmount}><Text style={styles.activityUsdc}>{transaction.type === 'sent' ? '−' : '+'}${transaction.amountUsdc.toFixed(2)}</Text><Text style={[styles.activityStatus, { color: transaction.status === 'completed' ? Colors.primary : transaction.status === 'failed' ? Colors.error : Colors.secondary }]}>{transaction.status === 'completed' ? 'Completed' : transaction.status === 'failed' ? 'Failed' : 'Pending'}</Text></View></TouchableOpacity>{index < transactions.length - 1 ? <View style={styles.divider} /> : null}</React.Fragment>) : <View style={styles.emptyActivity}><MaterialCommunityIcons name="receipt-text-outline" size={26} color={Colors.outline} /><Text style={styles.emptyActivityText}>Your transfers will appear here.</Text></View>}
