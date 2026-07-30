@@ -44,6 +44,8 @@ The user does not need to understand USDC or Stellar. Those are implementation r
 - Recipient Passports showing known-since date, completed transfers, usual amount, latest payment, and changes to recipient details.
 - A deliberate review before sending: recipient, network, amount, expected UGX, rate, fee, purpose, and delivery estimate.
 - Smart transfer guardrails for a new recipient, unusual amount, changed network, or amount above a saved monthly plan.
+- **Private Recipient Proof:** HomeWard creates a keyed, non-reversible commitment from the recipient profile and anchors a short commitment in the Stellar memo. No recipient name, phone number, prompt, or raw AI response is written to the public ledger.
+- **Verifiable safety audit:** every confirmed transfer records the safety policy version, relevant guardrail flags, and a tamper-evident audit hash. Receipts expose short proof references that a judge can independently compare with the Testnet transaction.
 
 ### Goals and HomeWard Circles
 
@@ -79,7 +81,7 @@ The user does not need to understand USDC or Stellar. Those are implementation r
 5. Optionally create a Goal or Circle for recurring family support.
 6. Enter an amount and purpose; HomeWard shows the expected UGX, rate, and fee.
 7. Review and explicitly confirm the transfer.
-8. HomeWard sends Test USDC on Stellar Testnet and presents the transaction hash, receipt, history entry, and related Goal/Circle update.
+8. HomeWard records the user confirmation and safety policy, sends Test USDC on Stellar Testnet with a private recipient commitment, then presents the transaction hash, receipt, history entry, and related Goal/Circle update.
 
 ## Architecture
 
@@ -103,6 +105,7 @@ HomeWard is a hackathon prototype. This table intentionally separates what works
 | Capability | Current state |
 | --- | --- |
 | Accounts, trusted recipients, Goals, Circles, history, receipts, notifications, and AI guardrails | Implemented in the prototype |
+| Private Recipient Proof and verifiable safety-audit record | Implemented with HMAC commitments and Stellar Testnet memo anchors; this is not a zero-knowledge proof or decentralized AI inference |
 | Wallet provisioning, Test USDC transfers, and transaction proof | Real Stellar **Testnet** transactions |
 | Africa’s Talking SMS | Sandbox only; messages appear in the registered Africa’s Talking simulator |
 | Kotani Pay payout | Sandbox/demo integration; no promise of live UGX settlement |
@@ -146,7 +149,7 @@ cd backend && npm install
 
 For a new project, run `twala-app/backend/supabase-schema.sql` in the Supabase SQL editor.
 
-For an existing HomeWard database, run the idempotent `twala-app/backend/supabase-user-isolation.sql` migration instead.
+For an existing HomeWard database, run the idempotent `twala-app/backend/supabase-user-isolation.sql` migration, then run `twala-app/backend/supabase-privacy-verification.sql` to enable proof fields on new receipts.
 
 ### Configure environment variables
 

@@ -49,6 +49,10 @@ CREATE TABLE transactions (
   stellar_operation_id TEXT DEFAULT '',
   kotani_reference_id TEXT DEFAULT '',
   kotani_status TEXT DEFAULT '',
+  recipient_commitment TEXT,
+  safety_audit_hash TEXT,
+  safety_policy_version TEXT,
+  safety_flags JSONB NOT NULL DEFAULT '[]'::jsonb,
   goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()

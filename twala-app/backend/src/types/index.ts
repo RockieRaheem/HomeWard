@@ -22,6 +22,10 @@ export interface Transaction {
   kotaniReferenceId?: string;
   kotaniStatus?: string;
   goalId?: string;
+  recipientCommitment?: string;
+  safetyAuditHash?: string;
+  safetyPolicyVersion?: string;
+  safetyFlags?: string[];
   createdAt: string;
 }
 

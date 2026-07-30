@@ -303,6 +303,7 @@ export default function SmartTransfer({ user }: Props = {}) {
     referenceId: string; newBalance: number; feeUsdc: number; rate: number;
     goalTitle?: string; stellarTxHash?: string; stellarExplorerUrl?: string;
     purpose?: string; recipientRelationship?: string; confirmedAt?: string;
+    recipientCommitment?: string; safetyAuditHash?: string; safetyFlags?: string[];
   } | null>(null);
   const [fundingProof, setFundingProof] = useState<StellarProof | null>(null);
   const [moneygramStatus, setMoneygramStatus] = useState<{ configured: boolean; environment: 'TESTNET' | 'PRODUCTION'; walletDomain: string | null } | null>(null);
@@ -431,6 +432,7 @@ export default function SmartTransfer({ user }: Props = {}) {
           goalId: selectedGoalId || undefined,
           senderName: user?.name,
           senderPhone: user?.phone,
+          confirmedByUser: true,
         });
         if (res.success && res.data) {
           const g = goals.find((x) => x.id === selectedGoalId);
@@ -449,6 +451,9 @@ export default function SmartTransfer({ user }: Props = {}) {
             purpose: selectedPurpose.label.replace(/^.*?\s/, ''), recipientRelationship, confirmedAt: new Date().toISOString(),
             stellarTxHash: res.data.stellarTxHash,
             stellarExplorerUrl: res.data.stellarExplorerUrl,
+            recipientCommitment: res.data.verification?.recipientCommitment,
+            safetyAuditHash: res.data.verification?.safetyAuditHash,
+            safetyFlags: res.data.verification?.safetyFlags,
           });
           setAmount('500');
           setRecipientName('');
@@ -469,7 +474,7 @@ export default function SmartTransfer({ user }: Props = {}) {
                   recipientPhone: recipientPhone.trim() || undefined, recipientNetwork,
                   purpose: selectedPurpose.label, goalId: selectedGoalId || undefined,
                   senderName: user?.name, senderPhone: user?.phone,
-                  confirmSelfSend: true,
+                  confirmSelfSend: true, confirmedByUser: true,
                 });
                 if (retryRes.success && retryRes.data) {
                   const g = goals.find((x) => x.id === selectedGoalId);
@@ -881,6 +886,9 @@ export default function SmartTransfer({ user }: Props = {}) {
         confirmedAt={successData?.confirmedAt}
         stellarTxHash={successData?.stellarTxHash}
         stellarExplorerUrl={successData?.stellarExplorerUrl}
+        recipientCommitment={successData?.recipientCommitment}
+        safetyAuditHash={successData?.safetyAuditHash}
+        safetyFlags={successData?.safetyFlags}
         onDone={() => setSuccessData(null)}
       />
     </View>

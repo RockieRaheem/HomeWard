@@ -7,6 +7,7 @@ import { notifyChange } from './events.js';
 import config from '../config.js';
 import type { ChatMessage, AiContext } from '../types/index.js';
 import * as sunbird from './sunbird.js';
+import { createRecipientCommitment, createSafetyAudit, memoForRecipientCommitment, POLICY_VERSION } from './privacy.js';
 
 // Models in priority order (best function-calling first, then fallbacks)
 // Only actively supported models — confirmed via Groq docs as of July 2026
@@ -369,6 +370,15 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
         return `SAFE-TO-SEND REVIEW (not sent): Trusted recipient ${trustedRecipient.fullName} (${trustedRecipient.relationship}) at ${trustedRecipient.phone} will receive ${fiat(quote.receiveAmountUgx)} via ${network}. You pay ${usdc(quote.sendAmountUsdc)}; fee ${usdc(quote.feeUsdc)}; rate 1 USDC = ${fiat(quote.rate)}. Purpose: ${args.purpose || 'Family support'}. Check the exact name, phone and amount, then reply with CONFIRM SEND. Do not say the payment was sent.`;
         }
         const referenceId = `ai-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const safetyFlags = ['AI_ASSISTED_TRANSFER', 'TRUSTED_RECIPIENT', 'EXPLICIT_USER_CONFIRMATION'];
+        if (insights.completedCount >= 2 && amountUsdc > Math.max(insights.usualAmountUsdc * 2, insights.usualAmountUsdc + 25)) safetyFlags.push('UNUSUAL_AMOUNT');
+        if (trustedRecipient.monthlyPlanUsdc && insights.sentThisMonthUsdc + amountUsdc > trustedRecipient.monthlyPlanUsdc) safetyFlags.push('MONTHLY_PLAN_EXCEEDED');
+        if (insights.lastNetwork && insights.lastNetwork !== network) safetyFlags.push('NETWORK_CHANGED');
+        const recipientCommitment = createRecipientCommitment({
+          userId: db.getCurrentUserId(), fullName: trustedRecipient.fullName, phone: trustedRecipient.phone, network,
+        });
+        const confirmedAt = new Date().toISOString();
+        const safetyAuditHash = createSafetyAudit({ commitment: recipientCommitment, amountUsdc: quote.sendAmountUsdc, flags: safetyFlags, confirmedAt });
 
         let stellarTxHash = '';
         try {
@@ -379,7 +389,7 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
             ? kotaniEscrow
             : config.stellar.usdcIssuer;
           stellarTxHash = await stellar.submitPayment(
-            wallet.secretKey, destination, quote.sendAmountUsdc.toFixed(7), referenceId,
+            wallet.secretKey, destination, quote.sendAmountUsdc.toFixed(7), memoForRecipientCommitment(recipientCommitment),
           );
           console.log(`  ✅ AI: Stellar payment sent ${stellarTxHash.slice(0, 8)}...`);
         } catch { stellarTxHash = `demo-${Date.now()}`; }
@@ -401,6 +411,7 @@ async function executeToolCall(toolCall: any, ctx: AiContext, userMessage: strin
           recipientNetwork: network, status: isTestnetSimulation ? 'completed' : 'pending', purpose: args.purpose || 'Transfer',
           stellarTxHash, kotaniReferenceId: referenceId,
           kotaniStatus: isTestnetSimulation ? 'SIMULATED_COMPLETED' : kotaniResult.data?.status || 'pending',
+          recipientCommitment, safetyAuditHash, safetyPolicyVersion: POLICY_VERSION, safetyFlags,
         });
 
         // Send SMS if phone provided (fire-and-forget)

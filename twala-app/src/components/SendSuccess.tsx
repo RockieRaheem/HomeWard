@@ -21,13 +21,16 @@ interface SendSuccessProps {
   rate: number;
   stellarTxHash?: string;
   stellarExplorerUrl?: string;
+  recipientCommitment?: string;
+  safetyAuditHash?: string;
+  safetyFlags?: string[];
   onDone: () => void;
 }
 
 export default function SendSuccess({
   visible, amountUsdc, amountUgx, recipientName, recipientPhone,
   recipientNetwork, referenceId, newBalance, goalTitle, purpose, recipientRelationship, confirmedAt,
-  feeUsdc, rate, stellarTxHash, stellarExplorerUrl, onDone,
+  feeUsdc, rate, stellarTxHash, stellarExplorerUrl, recipientCommitment, safetyAuditHash, safetyFlags, onDone,
 }: SendSuccessProps) {
   const { t } = useLanguage();
   const scale = useRef(new Animated.Value(0)).current;
@@ -146,6 +149,18 @@ export default function SendSuccess({
               </TouchableOpacity>
             ) : null}
 
+            {recipientCommitment && safetyAuditHash ? (
+              <View style={styles.privacyProof}>
+                <MaterialCommunityIcons name="shield-lock-outline" size={18} color={Colors.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.privacyProofTitle}>{t('Private recipient proof')}</Text>
+                  <Text style={styles.privacyProofText}>{t("The Stellar memo contains a non-reversible commitment, not the recipient's name or phone.")}</Text>
+                  <Text style={styles.privacyProofHash}>RC {recipientCommitment} · SA {safetyAuditHash}</Text>
+                  {safetyFlags?.length ? <Text style={styles.privacyProofText}>Safety checks: {safetyFlags.join(' · ').replace(/_/g, ' ')}</Text> : null}
+                </View>
+              </View>
+            ) : null}
+
           </Animated.View>
           </ScrollView>
 
@@ -207,6 +222,10 @@ const styles = StyleSheet.create({
   proofText: { flex: 1 },
   proofTitle: { fontSize: Typography.bodySm.fontSize, fontFamily: 'Inter', fontWeight: '700', color: Colors.onPrimary },
   proofHash: { fontSize: 10, fontFamily: 'Inter', color: Colors.onPrimary, marginTop: 2 },
+  privacyProof: { flexDirection: 'row', gap: 9, backgroundColor: Colors.surfaceContainerLow, borderRadius: BorderRadius.lg, padding: 12, marginTop: 10, borderWidth: 1, borderColor: Colors.primary + '33' },
+  privacyProofTitle: { fontSize: Typography.labelMd.fontSize, fontFamily: 'Inter', fontWeight: '800', color: Colors.primary },
+  privacyProofText: { fontSize: 10.5, fontFamily: 'Inter', lineHeight: 15, color: Colors.onSurfaceVariant, marginTop: 3 },
+  privacyProofHash: { fontSize: 9, fontFamily: 'monospace', color: Colors.onSurface, marginTop: 6 },
   goalImpact: { flexDirection: 'row', gap: 9, backgroundColor: '#EAF6F1', padding: 12, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: '#C5E7D8' },
   goalImpactLabel: { color: Colors.primary, fontSize: 9, letterSpacing: 0.8, fontFamily: 'Inter', fontWeight: '800' },
   goalImpactTitle: { color: Colors.onSurface, fontSize: 13, fontFamily: 'Inter', fontWeight: '800', marginTop: 2 },

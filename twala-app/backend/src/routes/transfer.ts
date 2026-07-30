@@ -6,6 +6,7 @@ import * as db from '../services/database.js';
 import { sendTransferNotificationAsync } from '../services/sms.js';
 import { notifyChange } from '../services/events.js';
 import config from '../config.js';
+import { createRecipientCommitment, createSafetyAudit, memoForRecipientCommitment, POLICY_VERSION } from '../services/privacy.js';
 
 const router = Router();
 
@@ -70,6 +71,35 @@ router.get('/proof/:hash', async (req, res) => {
   }
 });
 
+// GET /api/transfer/verification/:id — user-scoped verification record.
+// It returns only short HMAC prefixes, never the recipient's personal data.
+router.get('/verification/:id', async (req, res) => {
+  try {
+    const tx = await db.getTransaction(req.params.id);
+    if (!tx) return res.status(404).json({ success: false, message: 'Transaction not found.' });
+    if (!tx.recipientCommitment || !tx.safetyAuditHash || !tx.safetyPolicyVersion) {
+      return res.status(409).json({ success: false, message: 'This receipt predates private verification. Apply the privacy verification migration for new transfers.' });
+    }
+    const expectedMemo = memoForRecipientCommitment(tx.recipientCommitment);
+    const proof = tx.stellarTxHash ? await stellar.getTransactionProof(tx.stellarTxHash) : null;
+    res.json({
+      success: true,
+      data: {
+        policyVersion: tx.safetyPolicyVersion,
+        recipientCommitment: tx.recipientCommitment.slice(0, 24),
+        safetyAuditHash: tx.safetyAuditHash.slice(0, 24),
+        safetyFlags: tx.safetyFlags || [],
+        expectedMemo,
+        stellarMemoMatches: !proof || proof.memo === expectedMemo,
+        stellarTxHash: tx.stellarTxHash || null,
+      },
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(400).json({ success: false, message: msg });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // GET /api/transfer/quote?amount=XXX
 // ---------------------------------------------------------------------------
@@ -108,7 +138,7 @@ router.get('/quote', async (req, res) => {
 
 router.post('/offramp', async (req, res) => {
   try {
-    const { amountUsdc, recipientName, recipientPhone, recipientNetwork, purpose, goalId, senderName, senderPhone, confirmSelfSend } = req.body;
+    const { amountUsdc, recipientName, recipientPhone, recipientNetwork, purpose, goalId, senderName, senderPhone, confirmSelfSend, confirmedByUser } = req.body;
 
     const errors: string[] = [];
     if (!amountUsdc || amountUsdc <= 0) errors.push('Valid amountUsdc required');
@@ -120,6 +150,9 @@ router.post('/offramp', async (req, res) => {
     if (amountUsdc > config.homeward.maxTransferUsdc) errors.push(`Maximum transfer is ${config.homeward.maxTransferUsdc} USDC`);
     if (errors.length > 0) {
       return res.status(400).json({ success: false, message: errors.join('; ') });
+    }
+    if (confirmedByUser !== true) {
+      return res.status(400).json({ success: false, message: 'Open the Safe-to-send review and explicitly confirm the recipient, network and amount before sending.' });
     }
 
     // Self-send guard
@@ -149,6 +182,21 @@ router.post('/offramp', async (req, res) => {
     const rate = await getExchangeRate();
     const quote = calculateQuote(amountUsdc, rate);
     const referenceId = kotani.generateReferenceId();
+    const savedRecipients = await db.getRecipients();
+    const savedRecipient = savedRecipients.find((item) => item.phone === recipientPhone.trim());
+    const insights = await db.getRecipientTransferInsights(recipientPhone.trim());
+    const safetyFlags: string[] = [];
+    safetyFlags.push('EXPLICIT_USER_CONFIRMATION');
+    if (!savedRecipient) safetyFlags.push('NEW_RECIPIENT');
+    else safetyFlags.push('TRUSTED_RECIPIENT');
+    if (insights.lastNetwork && recipientNetwork && insights.lastNetwork !== recipientNetwork) safetyFlags.push('NETWORK_CHANGED');
+    if (insights.completedCount >= 2 && amountUsdc > Math.max(insights.usualAmountUsdc * 2, insights.usualAmountUsdc + 25)) safetyFlags.push('UNUSUAL_AMOUNT');
+    if (savedRecipient?.monthlyPlanUsdc && insights.sentThisMonthUsdc + amountUsdc > savedRecipient.monthlyPlanUsdc) safetyFlags.push('MONTHLY_PLAN_EXCEEDED');
+    const recipientCommitment = createRecipientCommitment({
+      userId: db.getCurrentUserId(), fullName: recipientName.trim(), phone: recipientPhone.trim(), network: recipientNetwork,
+    });
+    const confirmedAt = new Date().toISOString();
+    const safetyAuditHash = createSafetyAudit({ commitment: recipientCommitment, amountUsdc: quote.sendAmountUsdc, flags: safetyFlags, confirmedAt });
 
     // Step 1: Determine destination address
     const kotaniEscrow = config.kotani.escrowAddress;
@@ -165,7 +213,7 @@ router.post('/offramp', async (req, res) => {
         throw new Error(`Invalid destination address: ${destination}`);
       }
       stellarTxHash = await stellar.submitPayment(
-        wallet.secretKey, destination, quote.sendAmountUsdc.toFixed(7), referenceId,
+        wallet.secretKey, destination, quote.sendAmountUsdc.toFixed(7), memoForRecipientCommitment(recipientCommitment),
       );
       console.log(`  ✅ Stellar payment sent: ${stellarTxHash.slice(0, 8)}... (${quote.sendAmountUsdc} USDC → ${destination.slice(0, 8)}...)`);
     } catch (stellarErr) {
@@ -207,6 +255,7 @@ router.post('/offramp', async (req, res) => {
       status: transactionStatus, purpose: purpose.trim(), stellarTxHash,
       kotaniReferenceId: referenceId, kotaniStatus: payoutStatus,
       goalId: goalId || undefined,
+      recipientCommitment, safetyAuditHash, safetyPolicyVersion: POLICY_VERSION, safetyFlags,
     });
     await db.createNotification({
       category: 'payment',
@@ -242,6 +291,14 @@ router.post('/offramp', async (req, res) => {
         payoutMode: isTestnetSimulation ? 'SIMULATED_MOBILE_MONEY_REAL_STELLAR_TESTNET' : 'KOTANI_PARTNER',
         balance: newBalance.usdc,
         sms: null, // SMS sent async, check logs
+        verification: {
+          version: POLICY_VERSION,
+          recipientCommitment: recipientCommitment.slice(0, 24),
+          safetyAuditHash: safetyAuditHash.slice(0, 24),
+          safetyFlags,
+          memo: memoForRecipientCommitment(recipientCommitment),
+          confirmedAt,
+        },
         message: `${quote.receiveAmountUgx.toLocaleString()} UGX sent to ${recipientName.trim()} via ${recipientNetwork || 'MTN'} Mobile Money. Reference: ${referenceId.slice(-8)}`,
       },
     });

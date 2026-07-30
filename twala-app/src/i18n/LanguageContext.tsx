@@ -54,6 +54,7 @@ const LUGANDA: Record<string, string> = {
   'RECEIPT': 'BUJULIZI', 'Transaction details': 'Ebikwata ku kuweereza', 'You sent': 'Waweereza', 'You received': 'Wafuna', 'Pending confirmation': 'Kikyali kikakasibwa',
   'Recipient': 'Afuna ssente', 'Source': 'Ssente we zaava', 'HomeWard wallet': 'Waleti ya HomeWard', 'Mobile': 'Essimu', 'Network': 'Omukutu',
   'Receipt': 'Obujulizi', 'Date': 'Olunaku', 'Verified on Stellar Testnet': 'Kikakasiddwa ku Stellar Testnet', 'Download receipt': 'Wanikula obujulizi',
+  'Private recipient proof': 'Obukakafu obw’ekyama obw’afuna ssente', 'Stellar contains a non-reversible commitment, never the recipient name or phone.': 'Stellar erina obukakafu obutasobola kuzzibwa, so si linnya oba namba ya ssimu ey’afuna ssente.', 'The Stellar memo contains a non-reversible commitment, not the recipient\'s name or phone.': 'Memo ya Stellar erina obukakafu obutasobola kuzzibwa, so si linnya oba namba ya ssimu ey’afuna ssente.',
   'Transfer Successful!': 'Okuweereza kuwedde bulungi!', 'Money is on its way to': 'Ssente ziri mu kkubo okugenda eri', 'You Sent': 'Waweereza', 'Phone': 'Essimu',
   'Relationship': 'Enkolagana', 'Fee': 'Ebisale', 'New Balance': 'Bbalansi empya', 'Reference': 'Namba y’obujulizi', 'FAMILY OUTCOME UPDATED': 'EKIGENDERERWA KY’AMAKA KIZZA BUPYA',
   'This transfer has been linked to the family goal.': 'Okuweereza kuno kugattiddwa ku kigendererwa ky’amaka.', 'Confirmed by you': 'Wakakasa ggwe', 'Done': 'Kiwedde',

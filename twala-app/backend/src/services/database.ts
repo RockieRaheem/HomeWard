@@ -11,6 +11,7 @@ const userContext = new AsyncLocalStorage<string>();
 export function runForUser<T>(userId: string, work: () => T): T { return userContext.run(userId, work); }
 function currentUserId(): string | null { return userContext.getStore() || null; }
 function requireUserId(): string { const id = currentUserId(); if (!id) throw new Error('Authenticated user required'); return id; }
+export function getCurrentUserId(): string { return requireUserId(); }
 
 function db(): SupabaseClient {
   if (!_db) {
@@ -273,9 +274,7 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
 export async function createTransaction(
   input: Omit<Transaction, 'id' | 'createdAt'> & { goalId?: string }
 ): Promise<Transaction> {
-  const { data, error } = await db()
-    .from('transactions')
-    .insert({
+  const record = {
       user_id: requireUserId(),
       type: input.type,
       amount_usdc: input.amountUsdc,
@@ -291,9 +290,35 @@ export async function createTransaction(
       kotani_reference_id: input.kotaniReferenceId || '',
       kotani_status: input.kotaniStatus || '',
       goal_id: input.goalId || null,
-    })
+      recipient_commitment: input.recipientCommitment || null,
+      safety_audit_hash: input.safetyAuditHash || null,
+      safety_policy_version: input.safetyPolicyVersion || null,
+      safety_flags: input.safetyFlags || [],
+    };
+  let { data, error } = await db()
+    .from('transactions')
+    .insert(record)
     .select()
     .single();
+
+  // Keep existing deployments operational until the additive verification
+  // migration is applied. The transfer still succeeds, but cannot claim an
+  // anchored privacy proof until those columns exist.
+  if (error && /recipient_commitment|safety_audit_hash|safety_policy_version|safety_flags/i.test(error.message || '')) {
+    console.warn('  ⚠️ Privacy verification migration is not installed; saving transaction without verification metadata.');
+    const {
+      recipient_commitment: _recipientCommitment,
+      safety_audit_hash: _safetyAuditHash,
+      safety_policy_version: _safetyPolicyVersion,
+      safety_flags: _safetyFlags,
+      ...legacyRecord
+    } = record;
+    ({ data, error } = await db()
+      .from('transactions')
+      .insert(legacyRecord)
+      .select()
+      .single());
+  }
 
   checkError(error, 'createTransaction');
   if (!data) throw new Error('Failed to create transaction');
@@ -399,6 +424,10 @@ function txRow(data: any): Transaction {
     kotaniReferenceId: data.kotani_reference_id || undefined,
     kotaniStatus: data.kotani_status || undefined,
     goalId: data.goal_id || undefined,
+    recipientCommitment: data.recipient_commitment || undefined,
+    safetyAuditHash: data.safety_audit_hash || undefined,
+    safetyPolicyVersion: data.safety_policy_version || undefined,
+    safetyFlags: Array.isArray(data.safety_flags) ? data.safety_flags : [],
     createdAt: data.created_at,
   };
 }

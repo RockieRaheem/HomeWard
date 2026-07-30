@@ -106,6 +106,10 @@ export interface TransactionItem {
   status: 'pending' | 'completed' | 'failed';
   purpose: string;
   stellarTxHash?: string;
+  recipientCommitment?: string;
+  safetyAuditHash?: string;
+  safetyPolicyVersion?: string;
+  safetyFlags?: string[];
   goalId?: string;
   createdAt: string;
 }
@@ -261,8 +265,8 @@ export const transferApi = {
   quote: (amount: number) =>
     request<TransferQuote>(`/transfer/quote?amount=${amount}`),
 
-  offramp: (body: { amountUsdc: number; recipientName: string; recipientPhone?: string; recipientNetwork?: string; purpose: string; goalId?: string; senderName?: string; senderPhone?: string; confirmSelfSend?: boolean }) =>
-    request<{ transaction: TransactionItem; quote: TransferQuote; kotaniReferenceId: string; stellarTxHash: string; stellarExplorerUrl: string; stellarNetwork: 'TESTNET' | 'PUBLIC'; payoutMode: string; balance: number; sms: { success: boolean; message: string } | null; message: string }>(
+  offramp: (body: { amountUsdc: number; recipientName: string; recipientPhone?: string; recipientNetwork?: string; purpose: string; goalId?: string; senderName?: string; senderPhone?: string; confirmSelfSend?: boolean; confirmedByUser: boolean }) =>
+    request<{ transaction: TransactionItem; quote: TransferQuote; kotaniReferenceId: string; stellarTxHash: string; stellarExplorerUrl: string; stellarNetwork: 'TESTNET' | 'PUBLIC'; payoutMode: string; balance: number; sms: { success: boolean; message: string } | null; verification?: { version: string; recipientCommitment: string; safetyAuditHash: string; safetyFlags: string[]; memo: string; confirmedAt: string }; message: string }>(
       '/transfer/offramp', { method: 'POST', body: JSON.stringify(body) }, 30000
     ),
 
