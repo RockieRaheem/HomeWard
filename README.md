@@ -125,7 +125,7 @@ HomeWard is a hackathon prototype. This table intentionally separates what works
 | Private Recipient Proof and verifiable safety-audit record | Implemented with HMAC commitments and Stellar Testnet memo anchors; this is not a zero-knowledge proof or decentralized AI inference |
 | Wallet provisioning, Test USDC transfers, and transaction proof | Real Stellar **Testnet** transactions |
 | Africa’s Talking SMS | Sandbox only; messages appear in the registered Africa’s Talking simulator |
-| Kotani Pay payout | Sandbox/demo integration; no promise of live UGX settlement |
+| Kotani Pay payout | Sandbox/demo integration is implemented. Kotani's currently published Stellar USDC cash-out documentation lists Kenya and Ghana, so Uganda live payout must be confirmed and activated with Kotani before launch. |
 | MoneyGram cash-in | Transparent Testnet demonstration; a live UAE programme requires MoneyGram approval and allowlisting |
 | Transak checkout | Optional hosted integration; availability and supported payment methods depend on Transak approval and market support |
 | AED collection, KYC/AML, custody, FX, and live Uganda mobile-money payout | Require licensed, regulated partners before any public launch |

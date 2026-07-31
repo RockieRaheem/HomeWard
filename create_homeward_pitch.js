@@ -90,10 +90,10 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
 
 // 6. Flow
 {
-  const s = slide(); header(s, 'Production journey', 'One simple experience. Licensed partners handle regulated steps.', 'HomeWard is the trust and experience layer - not a bank or unlicensed money transmitter.');
-  const flow = [['1', 'Save recipient', 'Passport + purpose'], ['2', 'Fund abroad', 'Approved partner\nKYC + AED'], ['3', 'Settle value', 'USDC on Stellar'], ['4', 'Deliver UGX', 'Licensed partner\nMTN / Airtel'], ['5', 'Keep proof', 'Receipt + history']];
+  const s = slide(); header(s, 'Partner path to production', 'HomeWard orchestrates the experience; regulated partners move fiat.', 'The prototype proves the Stellar leg today and labels partner-dependent legs honestly.');
+  const flow = [['1', 'Save recipient', 'Passport + purpose'], ['2', 'Fund in UAE', 'MoneyGram cash-in\nafter programme approval'], ['3', 'Settle value', 'USDC on Stellar'], ['4', 'Deliver UGX', 'Kotani sandbox flow\nsubject to Uganda activation'], ['5', 'Keep proof', 'Receipt + history']];
   flow.forEach((f, i) => { const x = 0.55 + i * 2.55; rect(s, x, 2.72, 2.1, 2.15, i === 2 ? C.navy : C.white); tag(s, f[0], x + 0.2, 2.98, 0.4, i === 2); txt(s, f[1], x + 0.2, 3.62, 1.7, 0.34, { fontSize: 14, bold: true, color: i === 2 ? C.white : C.navy, align: 'center' }); txt(s, f[2], x + 0.2, 4.13, 1.7, 0.38, { fontSize: 10.5, color: i === 2 ? 'C9E6DE' : C.muted, align: 'center', breakLine: true }); if (i < 4) s.addShape(S.chevron, { x: x + 2.15, y: 3.67, w: 0.25, h: 0.3, fill: { color: C.green }, line: { color: C.green, transparency: 100 } }); });
-  rect(s, 0.75, 5.55, 11.8, 0.65, C.mint); txt(s, 'Today: real Stellar Testnet proof. Production: funding, FX, custody and payout only through regulated partners.', 1.0, 5.75, 11.3, 0.2, { fontSize: 13.5, bold: true, color: C.navy, align: 'center' }); footer(s, 6);
+  rect(s, 0.75, 5.55, 11.8, 0.65, C.mint); txt(s, 'Today: Stellar Testnet proof + Kotani sandbox workflow. MoneyGram UAE approval and Kotani Uganda production coverage remain required before live use.', 1.0, 5.75, 11.3, 0.2, { fontSize: 12.3, bold: true, color: C.navy, align: 'center' }); footer(s, 6);
 }
 
 // 7. Safety
@@ -121,7 +121,7 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
   const s = slide(); header(s, 'From proof to pilot', 'Our next milestone is not more screens. It is a regulated, user-tested corridor.');
   const blocks = [['NOW', 'Prove the experience', 'Stellar Testnet, Recipient Passport, Goals, Circles, Sunbird access and safety guardrails.'], ['NEXT', 'Prove demand', 'Test with UAE-Uganda families and validate language, trust and repeat-support behavior.'], ['THEN', 'Prove delivery', 'Integrate approved funding and Uganda mobile-money payout partners for a regulated pilot.']];
   blocks.forEach((b, i) => { const x = 0.75 + i * 4.05; rect(s, x, 2.55, 3.55, 2.88, C.white); tag(s, b[0], x + 0.25, 2.85, 0.82, i === 1); txt(s, b[1], x + 0.25, 3.56, 2.9, 0.33, { fontSize: 18, bold: true, color: C.navy }); txt(s, b[2], x + 0.25, 4.15, 2.9, 0.72, { fontSize: 12, color: C.muted, valign: 'top' }); });
-  txt(s, 'We are looking for: pilot users, regulated funding/payout partners, and mentors in diaspora finance and accessibility.', 1.0, 5.95, 11.2, 0.28, { fontSize: 14, bold: true, color: C.green, align: 'center' }); footer(s, 9);
+  txt(s, 'Next partnerships: MoneyGram UAE programme approval and Kotani validation for live Uganda mobile-money payout. We are also seeking pilot users and mentors.', 0.85, 5.92, 11.65, 0.33, { fontSize: 13, bold: true, color: C.green, align: 'center' }); footer(s, 9);
 }
 
 // 10. Close
@@ -139,4 +139,4 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
   txt(s, 'HomeWard | DevFest Blockchain Hackathon', 8.28, 6.72, 3.5, 0.15, { fontSize: 8.5, color: 'C9E6DE', align: 'center' });
 }
 
-pptx.writeFile({ fileName: 'C:/Users/Raheem/Desktop/Twala/HomeWard_DevFest_Winning_Pitch_Deck.pptx' });
+pptx.writeFile({ fileName: 'C:/Users/Raheem/Desktop/Twala/HomeWard_DevFest_Pitch_Deck_Final.pptx' });
