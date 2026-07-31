@@ -220,5 +220,6 @@ Before handling customer money, HomeWard needs regulated funding and payout part
 - **Kamwanga Raheem**
 - **Kisakye Abigail**
 - **Sunday Emmanuel Lugai**
+- **Kaboggoza Ivan**
 
 Built for Blockchain DevFest Kampala 2026.

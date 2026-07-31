@@ -134,7 +134,7 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
   txt(s, 'HOMEWARD', 8.55, 1.82, 2.95, 0.3, { fontSize: 23, bold: true, color: C.white, align: 'center', charSpacing: 1.2 });
   txt(s, 'Purpose\nProof\nPeace of mind', 8.55, 2.72, 2.95, 0.9, { fontSize: 22, bold: true, color: C.lime, align: 'center', breakLine: true });
   s.addShape(S.line, { x: 8.82, y: 4.05, w: 2.4, h: 0, line: { color: '5EA994', width: 1 } });
-  txt(s, 'Kamwanga Raheem\nKisakye Abigail\nSunday Emmanuel Lugai', 8.55, 4.43, 2.95, 0.54, { fontSize: 11.5, color: C.white, align: 'center', breakLine: true });
+  txt(s, 'Kamwanga Raheem\nKisakye Abigail\nSunday Emmanuel Lugai\nKaboggoza Ivan', 8.55, 4.35, 2.95, 0.78, { fontSize: 10.5, color: C.white, align: 'center', breakLine: true });
   txt(s, 'Thank you', 0.78, 6.7, 1.5, 0.2, { fontSize: 13, bold: true, color: C.lime });
   txt(s, 'HomeWard | DevFest Blockchain Hackathon', 8.28, 6.72, 3.5, 0.15, { fontSize: 8.5, color: 'C9E6DE', align: 'center' });
 }
