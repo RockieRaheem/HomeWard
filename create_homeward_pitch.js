@@ -29,9 +29,9 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
   s.addShape(S.arc, { x: 8.25, y: -1.15, w: 6.1, h: 6.1, adjustPoint: 0.25, fill: { color: C.navy, transparency: 100 }, line: { color: C.green, transparency: 25, width: 11 } });
   s.addShape(S.arc, { x: 9.2, y: 3.1, w: 4.4, h: 4.4, adjustPoint: 0.25, fill: { color: C.navy, transparency: 100 }, line: { color: C.lime, transparency: 25, width: 7 } });
   tag(s, 'A 60-second story', 0.75, 0.65, 1.65, true);
-  txt(s, 'Sunday sends money home\nevery month.', 0.75, 1.42, 7.1, 0.95, { fontSize: 33, bold: true, color: C.white, breakLine: true, valign: 'top' });
-  txt(s, 'But after pressing send, she still asks:', 0.78, 2.72, 6.1, 0.3, { fontSize: 16, color: 'C9E6DE' });
-  txt(s, '"Did it reach the right person?\nWhat did it actually achieve?"', 0.78, 3.28, 6.7, 0.78, { fontSize: 23, bold: true, color: C.lime, breakLine: true, valign: 'top' });
+  txt(s, 'A worker abroad sends money\nhome every month.', 0.75, 1.42, 7.1, 0.95, { fontSize: 33, bold: true, color: C.white, breakLine: true, valign: 'top' });
+  txt(s, 'But after pressing send, one question remains:', 0.78, 2.72, 6.3, 0.3, { fontSize: 16, color: 'C9E6DE' });
+  txt(s, '"Did it reach the right\nperson, for the right reason?"', 0.78, 3.28, 6.7, 0.78, { fontSize: 23, bold: true, color: C.lime, breakLine: true, valign: 'top' });
   rect(s, 0.75, 5.35, 5.5, 0.78, '0D5A57');
   txt(s, 'HomeWard turns a transfer into a\ntrusted family commitment.', 1.0, 5.51, 5.0, 0.4, { fontSize: 15, bold: true, color: C.white, breakLine: true, align: 'center' });
   txt(s, 'HOMEWARD', 0.75, 6.72, 3.0, 0.25, { fontSize: 13, bold: true, color: C.white, charSpacing: 1.5 });
@@ -40,11 +40,11 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
 
 // 2. Problem
 {
-  const s = slide(); header(s, 'The problem', 'The hidden cost of remittance is uncertainty.', 'Families are not only paying fees. They are carrying anxiety after every transfer.');
+  const s = slide(); header(s, 'The problem', 'Sending money home should not create new worries.', 'Families are not only paying fees. They are carrying anxiety after every transfer.');
   const cards = [
-    ['Wrong-recipient fear', 'A number can be wrong, changed, or shared. The sender needs confidence before money moves.', C.rose],
-    ['Invisible family outcomes', 'School fees, rent, land and medicine disappear into a generic transaction history.', C.amber],
-    ['Language and literacy barriers', 'Financial English and complex screens exclude users who prefer local languages or voice.', C.green],
+    ['Wrong-recipient fear', 'A mobile-money number can be wrong, changed, or shared. The sender needs confidence before money moves.', C.rose],
+    ['No clear picture', 'The sender needs to know the recipient amount, fee, rate and reason before confirming.', C.amber],
+    ['Hard-to-use apps', 'Financial English and complex screens exclude people who prefer local languages or voice.', C.green],
   ];
   cards.forEach((c, i) => { const x = 0.75 + i * 4.05; rect(s, x, 2.58, 3.55, 2.85, C.white); dot(s, x + 0.28, 2.93, c[2]); txt(s, `0${i + 1}`, x + 0.52, 2.86, 0.45, 0.22, { fontSize: 11, bold: true, color: C.muted }); txt(s, c[0], x + 0.28, 3.45, 2.9, 0.35, { fontSize: 17, bold: true, color: C.navy }); txt(s, c[1], x + 0.28, 4.0, 2.95, 0.85, { fontSize: 12.5, color: C.muted, valign: 'top' }); });
   rect(s, 0.75, 5.86, 11.82, 0.58, C.mint); txt(s, 'A transfer should feel like a promise kept - not a message sent into the dark.', 1.0, 6.03, 11.3, 0.2, { fontSize: 15, bold: true, color: C.navy, align: 'center' }); footer(s, 2);
@@ -52,12 +52,12 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
 
 // 3. Solution
 {
-  const s = slide(); header(s, 'The solution', 'HomeWard makes family support visible, safer, and easier to understand.');
+  const s = slide(); header(s, 'The solution', 'One simple place to check, send, and keep proof.', 'HomeWard is designed for family support, not cryptocurrency experts.');
   const features = [
-    ['Trusted Recipient Passport', 'Full name, phone, network, relationship, history and changed-detail warning.'],
-    ['Purpose-led transfer', 'Show the expected UGX, fee, rate and reason before the sender confirms.'],
-    ['Goals and Circles', 'Organise school fees, land, construction and recurring family support.'],
-    ['Proof after payment', 'Receipt, history, SMS sandbox update and independently verifiable Stellar proof.'],
+    ['Check the recipient', 'Save their name, phone, mobile-money network and relationship before sending.'],
+    ['Know before sending', 'See the expected UGX, fee, rate and reason before the sender confirms.'],
+    ['Support a real purpose', 'Organise school fees, land, construction and recurring family support.'],
+    ['Keep clear proof', 'A receipt, history, SMS sandbox update and independently verifiable Stellar record.'],
   ];
   features.forEach((f, i) => { const x = 0.75 + (i % 2) * 6.0; const y = 2.48 + Math.floor(i / 2) * 1.55; rect(s, x, y, 5.58, 1.2, C.white); rect(s, x + 0.23, y + 0.25, 0.52, 0.52, i === 2 ? C.lime : C.mint); txt(s, String(i + 1), x + 0.23, y + 0.34, 0.52, 0.16, { fontSize: 11, bold: true, color: C.green, align: 'center' }); txt(s, f[0], x + 0.98, y + 0.2, 4.15, 0.26, { fontSize: 15.5, bold: true, color: C.navy }); txt(s, f[1], x + 0.98, y + 0.58, 4.2, 0.36, { fontSize: 11.5, color: C.muted, valign: 'top' }); }); footer(s, 3);
 }
@@ -79,12 +79,12 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
 
 // 5. Stellar proof
 {
-  const s = slide(); header(s, 'The blockchain moment', 'Judges can inspect the proof - not just trust the interface.', 'HomeWard provisions a user wallet and sends Test USDC on Stellar Testnet.');
+  const s = slide(); header(s, 'The blockchain moment', 'Judges can inspect the proof - not just trust the interface.', 'HomeWard uses Stellar Testnet behind the scenes so the app stays simple for ordinary users.');
   rect(s, 0.75, 2.5, 5.5, 3.35, C.navy);
   txt(s, 'LIVE IN THE DEMO', 1.1, 2.9, 2.0, 0.18, { fontSize: 9.5, bold: true, color: C.lime, charSpacing: 1 });
   txt(s, 'Test USDC moves\non Stellar Testnet.', 1.1, 3.35, 4.25, 0.75, { fontSize: 25, bold: true, color: C.white, breakLine: true, valign: 'top' });
-  txt(s, 'Each successful transfer exposes its transaction hash and a one-tap Stellar explorer link.', 1.1, 4.55, 4.1, 0.5, { fontSize: 12.5, color: 'C9E6DE', valign: 'top' });
-  const proof = [['1', 'User wallet', 'Individual Testnet wallet and USDC trustline'], ['2', 'On-chain transfer', 'Stellar transaction is submitted'], ['3', 'Independent receipt', 'Hash opens in Stellar Expert Testnet']];
+  txt(s, 'Each successful transfer opens a receipt and a one-tap Stellar explorer record that anyone can inspect.', 1.1, 4.55, 4.1, 0.5, { fontSize: 12.5, color: 'C9E6DE', valign: 'top' });
+  const proof = [['1', 'HomeWard wallet', 'Each signed-in user has an individual Testnet wallet'], ['2', 'Transfer recorded', 'Test USDC is sent through Stellar Testnet'], ['3', 'Proof anyone can check', 'The receipt opens the Stellar Explorer transaction']];
   proof.forEach((p, i) => { const y = 2.5 + i * 1.12; rect(s, 7.0, y, 5.5, 0.91, C.white); rect(s, 7.25, y + 0.22, 0.42, 0.42, C.mint); txt(s, p[0], 7.25, y + 0.32, 0.42, 0.12, { fontSize: 10, bold: true, color: C.green, align: 'center' }); txt(s, p[1], 7.95, y + 0.14, 2.8, 0.2, { fontSize: 14, bold: true, color: C.navy }); txt(s, p[2], 7.95, y + 0.45, 3.9, 0.16, { fontSize: 10.5, color: C.muted }); }); footer(s, 5);
 }
 
@@ -99,7 +99,7 @@ function dot(s, x, y, color) { s.addShape(S.ellipse, { x, y, w: 0.12, h: 0.12, f
 // 7. Safety
 {
   const s = slide(); header(s, 'Why users can trust it', 'HomeWard makes the sender slow down at the moments that matter.');
-  const items = [['Recipient Passport', 'Known person, relationship, network, history and details-change warning.'], ['Smart guardrails', 'Warn on unfamiliar recipients, changed details, large transfers or missed plans.'], ['Human confirmation', 'AI can explain and prepare. The user must explicitly confirm payment.'], ['Private by default', 'User-scoped wallets, history, recipients, Goals, Circles and chats.']];
+  const items = [['Recipient Passport', 'Known person, relationship, network, history and changed-detail warning.'], ['Smart guardrails', 'Warn on unfamiliar recipients, changed details, large transfers or missed plans.'], ['Human confirmation', 'AI can explain and prepare. The user must explicitly confirm payment.'], ['Private recipient proof', 'Stellar gets a one-way code, never the recipient’s name or phone number.']];
   items.forEach((a, i) => { const x = 0.75 + (i % 2) * 6.02; const y = 2.45 + Math.floor(i / 2) * 1.52; rect(s, x, y, 5.58, 1.2, C.white); dot(s, x + 0.28, y + 0.32, [C.green, C.amber, C.rose, C.green][i]); txt(s, a[0], x + 0.55, y + 0.2, 3.9, 0.24, { fontSize: 15.5, bold: true, color: C.navy }); txt(s, a[1], x + 0.55, y + 0.58, 4.45, 0.35, { fontSize: 11.5, color: C.muted, valign: 'top' }); }); footer(s, 7);
 }
 

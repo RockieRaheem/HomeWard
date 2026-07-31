@@ -13,6 +13,8 @@
   <a href="#run-locally">Run locally</a>
 </p>
 
+> **In one sentence:** HomeWard helps people abroad support family in Uganda with a clear amount, a checked recipient, local-language help, and a receipt they can verify.
+
 <p align="center">
   <img src="https://img.shields.io/badge/Stellar-Testnet-7B2FBE?style=for-the-badge&logo=stellar&logoColor=white" alt="Stellar Testnet" />
   <img src="https://img.shields.io/badge/USDC-Testnet-2775CA?style=for-the-badge" alt="Test USDC" />
@@ -33,6 +35,17 @@ HomeWard is a mobile-first remittance experience designed around **people, purpo
 > The intended experience: pay abroad → family receives UGX on mobile money → both people have a clear record.
 
 The user does not need to understand USDC or Stellar. Those are implementation rails, not product jargon.
+
+## For judges: what to see in the live demo
+
+1. Register or sign in and see the user-specific wallet on the Dashboard.
+2. Add a **Trusted Recipient** with their name, phone number, MTN/Airtel network, relationship, and optional monthly plan.
+3. Open **Transfer** and enter an amount. The app shows the expected UGX, rate, fee, purpose, and recipient details before anything is sent.
+4. Confirm through **Safe-to-send review**. HomeWard records the confirmation, moves Test USDC on Stellar Testnet, and produces a receipt.
+5. Open the Stellar explorer from the receipt. The public transaction contains a private commitment reference, not a recipient name or phone number.
+6. Switch to **Luganda** or use the assistant voice controls to see how Sunbird AI makes the journey more accessible.
+
+The core transfer is real on **Stellar Testnet**. Funding, FX, custody, and mobile-money payout are deliberately labelled as sandbox, demo, or planned regulated-partner rails.
 
 ## What we built
 
@@ -82,6 +95,10 @@ The user does not need to understand USDC or Stellar. Those are implementation r
 6. Enter an amount and purpose; HomeWard shows the expected UGX, rate, and fee.
 7. Review and explicitly confirm the transfer.
 8. HomeWard records the user confirmation and safety policy, sends Test USDC on Stellar Testnet with a private recipient commitment, then presents the transaction hash, receipt, history entry, and related Goal/Circle update.
+
+## Plain-language privacy explanation
+
+When a transfer is confirmed, HomeWard creates a one-way code from the intended recipient and records only a short version of that code in the Stellar memo. This lets the receipt show that a checked recipient was tied to the transfer while keeping the person's name and phone number out of the public ledger. The code cannot be turned back into the recipient's details.
 
 ## Architecture
 
