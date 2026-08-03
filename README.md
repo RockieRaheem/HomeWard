@@ -215,6 +215,33 @@ This codebase is for a hackathon demonstration. Do not use Testnet keys, sandbox
 
 Before handling customer money, HomeWard needs regulated funding and payout partners, KYC/AML operations, hardened authentication, rate limiting, secure key custody or MPC, restrictive CORS, database row-level security, audited encryption, monitoring, incident response, and an independent security review.
 
+### Wallets and private keys: current prototype vs. production
+
+HomeWard intentionally gives people a familiar **account** experience rather than asking them to learn seed phrases, gas fees, token addresses, or blockchain recovery procedures. A sender's real concern is simple: *will my family receive the right amount safely?* HomeWard keeps the blockchain rail underneath that experience while still exposing a wallet address, transaction hash, and Stellar Explorer link for people who want independent proof.
+
+**How the current Testnet prototype works**
+
+1. When a signed-in user needs a wallet, the backend creates a real Stellar Testnet keypair: a public wallet address and a secret signing key.
+2. Stellar Friendbot funds that address with free Testnet XLM, which activates the account and covers Testnet transaction fees.
+3. The backend creates a trustline to HomeWard's Test USDC asset and sends Test USDC to the wallet for the demo.
+4. The public address and live balance are shown in HomeWard. During normal use, the browser never receives the secret key.
+5. The prototype is **custodial for Testnet**: the backend keeps the Testnet signing key with the user-scoped wallet record and signs only after the authenticated user completes the Safe-to-send review.
+
+This is appropriate for a hackathon Testnet demonstration, but it is **not** an acceptable production custody design for real customer funds. Testnet keys, Test USDC, sandbox credentials, and the prototype database setup must never be reused for Mainnet or live value.
+
+**How production would work**
+
+1. A user completes onboarding and required identity checks through a licensed funding/custody partner.
+2. HomeWard requests a managed Stellar wallet or sub-account for that verified user from a regulated custody provider.
+3. The private key is not stored in HomeWard's normal application database and is never displayed in the mobile app.
+4. Signing happens through secure custody infrastructure:
+   - **HSM (Hardware Security Module):** the full key remains inside a specialised secure signing service and cannot be exported to the ordinary backend.
+   - **MPC (Multi-Party Computation):** the key is split into secure key shares; no single server holds the complete key, and multiple parties cooperate to sign.
+5. The user confirms a transfer with a PIN, biometric check, or step-up verification. HomeWard applies recipient and risk checks, then requests a signature from the custody service.
+6. The regulated partner handles custody, KYC/AML, fiat conversion, and payout obligations; HomeWard provides the family-support experience, safety controls, and verifiable Stellar settlement record.
+
+In short: **users access a managed wallet by signing in to HomeWard, not by managing a private key.** This removes a major barrier for non-blockchain users while preserving an independently verifiable on-chain record.
+
 ## Team
 
 - **Kamwanga Raheem**
